@@ -72,29 +72,6 @@ def ensure_default_doubles(request, user_question):
 # COMMON NAME CORRECTIONS
 # ============================================================
 
-MOVE_ALIASES = {
-    "direclaw": "Dire Claw",
-    "dire claw": "Dire Claw",
-    "closecombat": "Close Combat",
-    "close combat": "Close Combat",
-    "close compbat": "Close Combat",
-    "gunkshot": "Gunk Shot",
-    "gunk shot": "Gunk Shot",
-    "flamethrower": "Flamethrower",
-    "earthquake": "Earthquake",
-    "thunderbolt": "Thunderbolt",
-    "icebeam": "Ice Beam",
-    "ice beam": "Ice Beam",
-    "heatwave": "Heat Wave",
-    "heat wave": "Heat Wave",
-    "lowkick": "Low Kick",
-    "low kick": "Low Kick",
-    "weatherball": "Weather Ball",
-    "weather ball": "Weather Ball",
-    "powergem": "Power Gem",
-    "power gem": "Power Gem",
-}
-
 POKEMON_ALIASES = {
     "sneasler": "Sneasler",
     "primarina": "Primarina",
@@ -148,15 +125,6 @@ def fix_pokemon_name(name):
     return POKEMON_ALIASES.get(key, name)
 
 
-def fix_move_name(name):
-    if not name:
-        return name
-
-    key = normalize_text(name)
-
-    return MOVE_ALIASES.get(key, name)
-
-
 def apply_default_abilities_to_battle(battle):
     for role in ("attacker", "defender"):
         pokemon = battle[role]
@@ -177,7 +145,6 @@ def apply_common_corrections(request, user_question):
         return {"mode": "clarify", "message": message}
     for role in ("attacker", "defender"):
         battle[role]["name"] = fix_pokemon_name(battle[role]["name"])
-    battle["move"] = fix_move_name(battle["move"])
     apply_default_abilities_to_battle(battle)
 
     # Ability-based field backup.
@@ -413,11 +380,11 @@ Default ability rules:
 - If the user mentions an ability, use the mentioned ability.
 
 Move parsing rules:
-- Heatwave means Heat Wave.
-- Weatherball means Weather Ball.
-- Powergem means Power Gem.
-- Direclaw means Dire Claw.
-- Close Combat means Close Combat.
+- Interpret move names from context, allowing differences in capitalization,
+  spacing, punctuation, and clear spelling mistakes.
+- Return the canonical Pokemon move name.
+- If the intended move is ambiguous or unknown, use clarify mode and ask
+  the user to specify the move. Never invent a move.
 - Never parse "max attack" as a move.
 - Never parse "Jolly" as a move.
 

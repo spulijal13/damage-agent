@@ -22,6 +22,18 @@ class DamageTests(unittest.TestCase):
         battle["field"] = {"critical": True}
         self.assertGreater(run_showdown_calc(battle)["max_damage"], baseline)
 
+    def test_move_name_normalization(self):
+        baseline = run_showdown_calc(self.battle("Drain Punch"))
+        for name in ("drainpunch", "DRAIN PUNCH", "drain-punch", "drain_punch"):
+            with self.subTest(name=name):
+                result = run_showdown_calc(self.battle(name))
+                self.assertEqual(result["move"], "Drain Punch")
+                self.assertEqual(result["damage"], baseline["damage"])
+
+    def test_unresolved_move_typo_requests_clarification(self):
+        with self.assertRaisesRegex(RuntimeError, "Please restate your battle question"):
+            run_showdown_calc(self.battle("close compbat"))
+
     def test_light_screen(self):
         battle = self.battle("Moonblast", "Primarina", "Sneasler")
         baseline = run_showdown_calc(battle)["max_damage"]

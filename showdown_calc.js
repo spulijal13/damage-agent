@@ -39,8 +39,11 @@ function main() {
   const attacker = makePokemon(attackerInput);
   const defender = makePokemon(defenderInput);
   const moveId = String(input.move || "").toLowerCase().replace(/[^a-z0-9]/g, "");
-  if (!gen.moves.get(moveId)) throw new Error(`Unknown move: ${input.move}`);
-  const move = new Move(gen, input.move, {isCrit: !!fieldInput.critical});
+  const moveData = gen.moves.get(moveId);
+  if (!moveData) {
+    throw new Error(`Unknown move: ${input.move}. Please restate your battle question with the intended move's full name.`);
+  }
+  const move = new Move(gen, moveData.name, {isCrit: !!fieldInput.critical});
 
   const field = new Field({
     gameType: fieldInput.is_double_battle === false ? "Singles" : "Doubles",
