@@ -1,5 +1,8 @@
 import json
 import subprocess
+from pathlib import Path
+
+CALCULATOR_PATH = Path(__file__).resolve().with_name("showdown_calc.js")
 
 
 def run_showdown_calc(battle):
@@ -12,17 +15,18 @@ def run_showdown_calc(battle):
     }
 
     result = subprocess.run(
-        ["node", "showdown_calc.js", json.dumps(payload)],
+        ["node", str(CALCULATOR_PATH), json.dumps(payload)],
         capture_output=True,
         text=True,
+        timeout=30,
     )
 
     if result.returncode != 0:
         try:
             error_data = json.loads(result.stderr)
-            raise RuntimeError(error_data.get("error", result.stderr))
-        except Exception:
-            raise RuntimeError(result.stderr)
+        except json.JSONDecodeError:
+            raise RuntimeError(result.stderr.strip() or "Showdown calculation failed.") from None
+        raise RuntimeError(error_data.get("error", result.stderr))
 
     return json.loads(result.stdout)
 
@@ -32,17 +36,11 @@ def explain_showdown_damage(result):
     min_damage = result["min_damage"]
     max_damage = result["max_damage"]
 
-    lines = []
-
-    lines.append(result["description"])
-    lines.append("")
-    lines.append("Result:")
-    lines.append(f"Damage: {min_damage}–{max_damage} HP")
-    lines.append("")
-    lines.append("Showdown result:")
-    lines.append(result["full_description"])
-    lines.append("")
-    lines.append("Damage rolls:")
-    lines.append(", ".join(str(x) for x in damage))
-
+    lines = [result["full_description"], "", f"Damage: {min_damage}–{max_damage} HP", ""]
+    if damage and isinstance(damage[0], list):
+        lines.append("Damage rolls by hit:")
+        lines.extend(f"Hit {i}: " + ", ".join(map(str, rolls))
+                     for i, rolls in enumerate(damage, 1))
+    else:
+        lines.extend(["Damage rolls:", ", ".join(map(str, damage))])
     return "\n".join(lines)

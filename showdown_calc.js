@@ -13,37 +13,44 @@ function main() {
   const defenderInput = clean(input.defender);
   const fieldInput = clean(input.field);
 
-  const attacker = new Pokemon(gen, attackerInput.name, {
-    level: attackerInput.level || 50,
-    ability: attackerInput.ability || undefined,
-    item: attackerInput.item || undefined,
-    nature: attackerInput.nature || "Serious",
-    evs: attackerInput.evs || {},
-    ivs: attackerInput.ivs || {},
-    boosts: attackerInput.boosts || {},
-    status: attackerInput.status || undefined,
-  });
-
-  const defender = new Pokemon(gen, defenderInput.name, {
-    level: defenderInput.level || 50,
-    ability: defenderInput.ability || undefined,
-    item: defenderInput.item || undefined,
-    nature: defenderInput.nature || "Serious",
-    evs: defenderInput.evs || {},
-    ivs: defenderInput.ivs || {},
-    boosts: defenderInput.boosts || {},
-    status: defenderInput.status || undefined,
-  });
-
-  const move = new Move(gen, input.move);
+  function makePokemon(data) {
+    const id = String(data.name || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    if (!gen.species.get(id)) throw new Error(`Unknown Pokemon: ${data.name}`);
+    if (data.grounded !== undefined) {
+      throw new Error("Explicit grounded overrides are unsupported; omit grounded to infer it from typing, ability, and item.");
+    }
+    const options = {
+      level: data.level ?? 50,
+      ability: data.ability || undefined,
+      item: data.item || undefined,
+      nature: data.nature || "Serious",
+      evs: data.evs || {}, ivs: data.ivs || {}, boosts: data.boosts || {},
+      status: data.status || undefined,
+    };
+    const pokemon = new Pokemon(gen, data.name, options);
+    const percent = data.current_hp_percent ?? 100;
+    if (typeof percent !== "number" || !Number.isFinite(percent) || percent <= 0 || percent > 100) {
+      throw new Error("current_hp_percent must be greater than 0 and at most 100.");
+    }
+    return new Pokemon(gen, data.name, {
+      ...options, curHP: Math.max(1, Math.floor(pokemon.maxHP() * percent / 100)),
+    });
+  }
+  const attacker = makePokemon(attackerInput);
+  const defender = makePokemon(defenderInput);
+  const moveId = String(input.move || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  if (!gen.moves.get(moveId)) throw new Error(`Unknown move: ${input.move}`);
+  const move = new Move(gen, input.move, {isCrit: !!fieldInput.critical});
 
   const field = new Field({
     gameType: fieldInput.is_double_battle === false ? "Singles" : "Doubles",
     weather: fieldInput.weather || undefined,
     terrain: fieldInput.terrain || undefined,
-    isReflect: fieldInput.reflect || false,
-    isLightScreen: fieldInput.light_screen || false,
-    isAuroraVeil: fieldInput.aurora_veil || false,
+    defenderSide: {
+      isReflect: !!fieldInput.reflect,
+      isLightScreen: !!fieldInput.light_screen,
+      isAuroraVeil: !!fieldInput.aurora_veil,
+    },
   });
 
   const result = calculate(gen, attacker, defender, move, field);
@@ -55,8 +62,10 @@ function main() {
     defender: defender.name,
     move: move.name,
     damage: damage,
-    min_damage: Math.min(...damage),
-    max_damage: Math.max(...damage),
+    min_damage: result.range()[0],
+    max_damage: result.range()[1],
+    defender_hp: defender.maxHP(),
+    defender_current_hp: defender.curHP(),
     description: result.desc(),
     full_description: result.fullDesc(),
     range: result.range(),

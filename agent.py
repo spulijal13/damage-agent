@@ -1,30 +1,16 @@
 import json
 import os
-import re
 
-from google import genai
-from google.genai import types
-
-from showdown_bridge import (
-    run_showdown_calc,
-    explain_showdown_damage,
-)
+from showdown_bridge import run_showdown_calc, explain_showdown_damage
 
 
-# ============================================================
-# GEMINI CLIENT
-# ============================================================
-
-api_key = os.environ.get("GEMINI_API_KEY")
-
-if not api_key:
-    raise ValueError(
-        "Missing GEMINI_API_KEY.\n"
-        "Run this in your terminal first:\n"
-        'export GEMINI_API_KEY="paste_your_key_here"'
-    )
-
-client = genai.Client(api_key=api_key)
+def create_client():
+    """Only require Gemini dependencies and credentials when starting the CLI."""
+    api_key = os.environ.get("GEMINI_API_KEY")
+    if not api_key:
+        raise ValueError("Missing GEMINI_API_KEY. Set it before starting the agent.")
+    from google import genai
+    return genai.Client(api_key=api_key)
 
 
 # ============================================================
@@ -110,7 +96,6 @@ MOVE_ALIASES = {
 }
 
 POKEMON_ALIASES = {
-    "dire wolf": "Sneasler",
     "sneasler": "Sneasler",
     "primarina": "Primarina",
     "kingambit": "Kingambit",
@@ -173,81 +158,27 @@ def fix_move_name(name):
 
 
 def apply_default_abilities_to_battle(battle):
-    attacker_name = battle["attacker"].get("name")
-    defender_name = battle["defender"].get("name")
-
-    if battle["attacker"].get("ability") is None:
-        battle["attacker"]["ability"] = DEFAULT_ABILITY_BY_FORM.get(attacker_name)
-
-    if battle["defender"].get("ability") is None:
-        battle["defender"]["ability"] = DEFAULT_ABILITY_BY_FORM.get(defender_name)
-
+    for role in ("attacker", "defender"):
+        pokemon = battle[role]
+        default = DEFAULT_ABILITY_BY_FORM.get(pokemon.get("name"))
+        if pokemon.get("ability") is None and default is not None:
+            pokemon["ability"] = default
     return battle
 
 
-def apply_default_abilities_to_bulk_request(request):
-    attacker_name = request["attacker"].get("name")
-    defender_name = request["defender"].get("name")
-
-    if request["attacker"].get("ability") is None:
-        request["attacker"]["ability"] = DEFAULT_ABILITY_BY_FORM.get(attacker_name)
-
-    if request["defender"].get("ability") is None:
-        request["defender"]["ability"] = DEFAULT_ABILITY_BY_FORM.get(defender_name)
-
-    return request
-
-
 def apply_common_corrections(request, user_question):
-    q = normalize_text(user_question)
-
-    # Fix move names from user text.
-    for alias, real_move in MOVE_ALIASES.items():
-        if alias in q:
-            if request.get("mode") == "damage" and "battle" in request:
-                request["battle"]["move"] = real_move
-            elif is_optimization_mode(request):
-                request["move"] = real_move
-
-    # Fix Pokemon names.
-    if request.get("mode") == "damage" and "battle" in request:
-        request["battle"]["attacker"]["name"] = fix_pokemon_name(
-            request["battle"]["attacker"].get("name")
-        )
-        request["battle"]["defender"]["name"] = fix_pokemon_name(
-            request["battle"]["defender"].get("name")
-        )
-
-        request["battle"]["move"] = fix_move_name(request["battle"].get("move"))
-        request["battle"] = apply_default_abilities_to_battle(request["battle"])
-
-    elif is_optimization_mode(request):
-        request["attacker"]["name"] = fix_pokemon_name(
-            request["attacker"].get("name")
-        )
-        request["defender"]["name"] = fix_pokemon_name(
-            request["defender"].get("name")
-        )
-
-        request["move"] = fix_move_name(request.get("move"))
-        request = apply_default_abilities_to_bulk_request(request)
-
-    # Crit handling.
-    if "crit" in q or "critical" in q:
-        set_field_value(request, "critical", True)
-
-    # Weather handling.
-    if "under the sun" in q or "in sun" in q or " sun" in q:
-        set_field_value(request, "weather", "Sun")
-
-    if "rain" in q:
-        set_field_value(request, "weather", "Rain")
-
-    if "sandstorm" in q or "sand storm" in q:
-        set_field_value(request, "weather", "Sand")
-
-    if "snow" in q or "hail" in q:
-        set_field_value(request, "weather", "Snow")
+    # Normalize parsed names without overwriting the model's move, item ownership,
+    # or explicit field choices based on unrelated words in the question.
+    if request.get("mode") != "damage":
+        return request
+    battle = request.get("battle")
+    valid, message = validate_damage_battle(battle)
+    if not valid:
+        return {"mode": "clarify", "message": message}
+    for role in ("attacker", "defender"):
+        battle[role]["name"] = fix_pokemon_name(battle[role]["name"])
+    battle["move"] = fix_move_name(battle["move"])
+    apply_default_abilities_to_battle(battle)
 
     # Ability-based field backup.
     # This is important for Mega Charizard Y Weather Ball.
@@ -280,31 +211,6 @@ def apply_common_corrections(request, user_question):
             elif "misty surge" in ability_text:
                 field["terrain"] = "Misty"
 
-    # Item handling backup.
-    if "chople" in q:
-        if request.get("mode") == "damage" and "battle" in request:
-            request["battle"]["defender"]["item"] = "Chople Berry"
-        elif is_optimization_mode(request):
-            request["defender"]["item"] = "Chople Berry"
-
-    if "life orb" in q or "lifeorb" in q:
-        if request.get("mode") == "damage" and "battle" in request:
-            request["battle"]["attacker"]["item"] = "Life Orb"
-        elif is_optimization_mode(request):
-            request["attacker"]["item"] = "Life Orb"
-
-    if "choice band" in q or "choiceband" in q:
-        if request.get("mode") == "damage" and "battle" in request:
-            request["battle"]["attacker"]["item"] = "Choice Band"
-        elif is_optimization_mode(request):
-            request["attacker"]["item"] = "Choice Band"
-
-    if "choice specs" in q or "choicespecs" in q:
-        if request.get("mode") == "damage" and "battle" in request:
-            request["battle"]["attacker"]["item"] = "Choice Specs"
-        elif is_optimization_mode(request):
-            request["attacker"]["item"] = "Choice Specs"
-
     return request
 
 
@@ -313,6 +219,12 @@ def apply_common_corrections(request, user_question):
 # ============================================================
 
 def validate_damage_battle(battle):
+    if not isinstance(battle, dict):
+        return False, "I need a battle with an attacker, defender, and move."
+    if any(not isinstance(battle.get(role), dict) for role in ("attacker", "defender")):
+        return False, "I need both the attacking and defending Pokemon."
+    if not isinstance(battle.get("field", {}), dict):
+        return False, "Battle field must be an object."
     attacker_name = battle.get("attacker", {}).get("name")
     defender_name = battle.get("defender", {}).get("name")
     move_name = battle.get("move")
@@ -374,6 +286,13 @@ Pokemon Champions Stat Point conversion:
 - If the user says "max Speed", set spe to 252.
 - If the user says "no stat points in defense", set def to 0.
 - If the user gives a number followed by a stat, treat that number as Champions Stat Points unless they clearly say normal EVs.
+
+Unsupported requests:
+- Bulk/spread optimization and multi-turn survival planning are not connected.
+- For these requests return mode "clarify" with a message explaining that only direct damage calculations are supported.
+- Do not add a grounded flag; grounding is inferred by the calculator from typing, ability, and item.
+- Status values must use Showdown codes: brn, par, psn, tox, slp, frz.
+- Respect negation: "no crit" means critical is false, and "no rain" must not enable Rain.
 
 Use these modes:
 
@@ -437,8 +356,7 @@ Return:
       "item": null,
       "boosts": {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0},
       "status": null,
-      "current_hp_percent": 100,
-      "grounded": true
+      "current_hp_percent": 100
     },
     "move": "Move name",
     "field": {
@@ -518,7 +436,9 @@ Return valid JSON only.
 # GEMINI CALL
 # ============================================================
 
-def make_battle_dict(user_question):
+def make_battle_dict(user_question, client):
+    from google.genai import types
+
     response = client.models.generate_content(
         model="gemini-2.5-flash",
         contents=f"{SYSTEM_PROMPT}\n\nUser question:\n{user_question}",
@@ -529,7 +449,10 @@ def make_battle_dict(user_question):
     )
 
     cleaned = extract_json(response.text)
-    return json.loads(cleaned)
+    request = json.loads(cleaned)
+    if not isinstance(request, dict):
+        raise ValueError("Model response must be a JSON object.")
+    return request
 
 
 # ============================================================
@@ -537,6 +460,7 @@ def make_battle_dict(user_question):
 # ============================================================
 
 def run_agent():
+    client = create_client()
     print("Pokemon Damage Calc Agent using Google Gemini + Showdown Calc")
     print("Pokemon Champions parsing: 66 total points, 32 max per stat, doubles by default.")
     print("Type a battle question. Type 'quit' to stop.")
@@ -553,7 +477,7 @@ def run_agent():
             continue
 
         try:
-            battle_request = make_battle_dict(user_question)
+            battle_request = make_battle_dict(user_question, client)
             battle_request = apply_common_corrections(battle_request, user_question)
             battle_request = ensure_default_doubles(battle_request, user_question)
 
@@ -597,7 +521,7 @@ def run_agent():
             if mode == "bulk_optimize":
                 print()
                 print("Bulk optimization is not connected yet after switching to Showdown.")
-                print("First confirm direct damage works. Then update optimizer.py to call run_showdown_calc().")
+                print("Please ask for a direct damage calculation instead.")
                 print()
                 continue
 
