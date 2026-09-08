@@ -2,26 +2,6 @@ STAT_KEYS = ("hp", "atk", "def", "spa", "spd", "spe")
 BOOST_KEYS = ("atk", "def", "spa", "spd", "spe")
 CHAMPIONS_MAX_POINTS_PER_STAT = 32
 
-POKEMON_ALIASES = {
-    "sneasler": "Sneasler",
-    "primarina": "Primarina",
-    "kingambit": "Kingambit",
-    "kingabit": "Kingambit",
-    "glimmora": "Glimmora",
-    "mega venusaur": "Venusaur-Mega",
-    "megavenusaur": "Venusaur-Mega",
-    "venusaur mega": "Venusaur-Mega",
-    "venusaur-mega": "Venusaur-Mega",
-    "mega charizard y": "Charizard-Mega-Y",
-    "megacharizardy": "Charizard-Mega-Y",
-    "charizard mega y": "Charizard-Mega-Y",
-    "charizard-mega-y": "Charizard-Mega-Y",
-    "mega charizard x": "Charizard-Mega-X",
-    "megacharizardx": "Charizard-Mega-X",
-    "charizard mega x": "Charizard-Mega-X",
-    "charizard-mega-x": "Charizard-Mega-X",
-}
-
 DEFAULT_ABILITY_BY_FORM = {
     "Venusaur-Mega": "Thick Fat",
     "Charizard-Mega-Y": "Drought",
@@ -70,12 +50,6 @@ def champions_points_to_evs(points):
         return 0
     points = min(points, CHAMPIONS_MAX_POINTS_PER_STAT)
     return points * 8 - 4
-
-
-def fix_pokemon_name(name):
-    if not name:
-        return name
-    return POKEMON_ALIASES.get(normalize_text(name), name)
 
 
 def _int_map(source, keys, default=0):
@@ -133,7 +107,7 @@ def _ability_field_defaults(attacker_ability, defender_ability, field):
 
 def build_pokemon(slot):
     slot = slot if isinstance(slot, dict) else {}
-    name = fix_pokemon_name(slot.get("name"))
+    name = slot.get("name")
     ability = slot.get("ability")
     if ability is None:
         ability = DEFAULT_ABILITY_BY_FORM.get(name)

@@ -1,7 +1,7 @@
 import json
 import os
 from pathlib import Path
-from dotenv import load_dotenv
+from pokemon_catalog import pokemon_names, pokemon_names_json
 
 from battle_builder import (
     build_battle,
@@ -9,10 +9,13 @@ from battle_builder import (
     validate_damage_slots,
 )
 from showdown_bridge import run_showdown_calc, explain_showdown_damage
+from battle_summary import format_battle_summary
 
 
 def create_client():
     """Only require Gemini dependencies and credentials when starting the CLI."""
+
+    from dotenv import load_dotenv
 
     load_dotenv(Path(__file__).resolve().with_name(".env"))
     api_key = os.environ.get("GEMINI_API_KEY")
@@ -111,7 +114,10 @@ Modes:
 - damage: fill attacker, defender, move, and any mentioned spreads.
 
 Pokemon slots:
-- name: Showdown form name. Mega Venusaur = Venusaur-Mega. Mega Charizard Y = Charizard-Mega-Y. Mega Charizard X = Charizard-Mega-X.
+- name: copy the exact canonical name from the Pokemon names JSON provided below.
+- Resolve spelling mistakes, spacing, capitalization, and alternate form word order against that list when the intended Pokemon is clear.
+- Preserve requested forms. If multiple species/forms are plausible and the question does not distinguish them, use clarify and ask which one; do not guess a form.
+- If there is no reasonable match in the list, use clarify. Never invent a name.
 - spread: Champions stat points 0-32, only stats the user mentioned. Unmentioned stats omitted.
 - evs: only if the user clearly asked for normal EVs. Do not fill both spread and evs.
 - ability, item, nature, status, boosts, current_hp_percent: only if mentioned, on the Pokemon they belong to.
@@ -135,6 +141,10 @@ Status codes: brn, par, psn, tox, slp, frz.
 """
 
 
+def build_system_prompt():
+    return SYSTEM_PROMPT + "\nPokemon names JSON:\n" + pokemon_names_json()
+
+
 def parse_damage_slots(user_question, client):
     from google.genai import types
 
@@ -142,7 +152,7 @@ def parse_damage_slots(user_question, client):
         model="gemini-2.5-flash",
         contents=user_question,
         config=types.GenerateContentConfig(
-            system_instruction=SYSTEM_PROMPT,
+            system_instruction=build_system_prompt(),
             response_mime_type="application/json",
             response_schema=DAMAGE_SLOT_SCHEMA,
             temperature=0.1,
@@ -164,6 +174,14 @@ def prepare_damage_request(extraction, user_question):
     valid, message = validate_damage_slots(extraction)
     if not valid:
         return {"mode": "clarify", "message": message}
+
+    for role in ("attacker", "defender"):
+        name = extraction[role]["name"]
+        if name not in pokemon_names():
+            return {
+                "mode": "clarify",
+                "message": f"I could not resolve the {role} name {name!r} to the Pokemon catalog. Please restate the battle with the intended Pokemon and form.",
+            }
 
     battle = build_battle(extraction)
     ensure_default_doubles(battle, user_question)
@@ -212,11 +230,7 @@ def run_agent():
             if mode == "damage":
                 battle = battle_request["battle"]
                 print()
-                print("Parsed slots:")
-                print(json.dumps(extraction, indent=2))
-                print()
-                print("Battle dictionary:")
-                print(json.dumps(battle, indent=2))
+                print(format_battle_summary(battle))
                 print()
                 result = run_showdown_calc(battle)
                 print("Result:")

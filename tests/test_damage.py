@@ -1,9 +1,11 @@
 import copy
 import os
+import json
 import tempfile
 import unittest
 
-from agent import apply_common_corrections
+from agent import apply_common_corrections, build_system_prompt
+from pokemon_catalog import POKEDEX_PATH, pokemon_names, pokemon_names_json
 from battle_builder import (
     build_battle,
     champions_points_to_evs,
@@ -16,6 +18,25 @@ class DamageTests(unittest.TestCase):
     def battle(self, move="Dire Claw", attacker="Sneasler", defender="Primarina"):
         return {"attacker": {"name": attacker}, "defender": {"name": defender},
                 "move": move, "field": {}}
+
+    def test_parser_catalog_contains_every_pokedex_name(self):
+        source = json.loads(POKEDEX_PATH.read_text(encoding="utf-8"))
+        expected = {entry["name"] for entry in source.values()}
+        self.assertEqual(set(json.loads(pokemon_names_json())), expected)
+        self.assertIn(pokemon_names_json(), build_system_prompt())
+        self.assertIn("Charizard-Mega-Y", pokemon_names())
+
+    def test_unresolved_parser_name_clarifies(self):
+        for name in ("kingabit", "Mega Charizard Y", "Not a Pokemon"):
+            slots = {"mode": "damage", **self.battle(attacker=name)}
+            self.assertEqual(apply_common_corrections(slots)["mode"], "clarify")
+
+    def test_canonical_parser_form_reaches_calculator(self):
+        slots = {"mode": "damage", **self.battle(
+            move="Flamethrower", attacker="Charizard-Mega-Y")}
+        request = apply_common_corrections(slots)
+        self.assertEqual(request["battle"]["attacker"]["name"], "Charizard-Mega-Y")
+        self.assertGreater(run_showdown_calc(request["battle"])["max_damage"], 0)
 
     def test_physical_critical_and_screens(self):
         battle = self.battle()

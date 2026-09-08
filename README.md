@@ -29,11 +29,20 @@ Type `quit` to exit. Questions are sent to Gemini; damage is calculated locally.
 - Current HP percentages greater than zero and at most 100.
 - Doubles by default; explicitly request singles to change that.
 
-The parser defaults to generation 9, level 50, 31 IVs, zero EVs, and a neutral
-nature. Its prompt interprets numeric stat investments as Champions points:
-zero maps to zero EVs; positive points map to `8 * points - 4`. The prompt specifies
-66 total points and 32 per stat. **Conversion and spread limits are currently
-prompt instructions, not deterministic validation.** Explicit normal EV requests
+Gemini receives a compact JSON list of every canonical Pokémon/form name, derived
+at runtime by `pokemon_catalog.py` from `files/pokedex.json`. It resolves clear
+misspellings and alternate form wording as part of parsing, and is instructed to
+ask for clarification when the intended species/form is ambiguous. Python checks
+that returned names exist in the catalog; it does not maintain aliases or perform
+fuzzy matching. Smogon still checks whether a name is supported by the calculator.
+The catalog is cached per process: update the Pokédex and restart the CLI to refresh
+it. Only names are sent to Gemini, not the full stats/abilities dataset; this adds
+prompt tokens to each request. No separate generated data file needs maintaining.
+
+The battle builder defaults to generation 9, level 50, 31 IVs, zero EVs, and a neutral
+nature. Gemini interprets numeric stat investments as Champions points; Python converts them:
+zero maps to zero EVs; positive points map to `8 * points - 4`. Python caps points at 32 per stat. The 66-point total budget is not currently
+validated. Explicit normal EV requests
 are also accepted. This is a generation 9 calculation backend, not a complete
 Champions ruleset implementation.
 
@@ -46,11 +55,13 @@ you can inspect assumptions. Natural-language parsing can still make mistakes.
 | File | Status |
 | --- | --- |
 | `agent.py` | Active Gemini parser and CLI |
+| `battle_builder.py` | Local battle defaults and Champions point conversion |
+| `pokemon_catalog.py` | Names-only context derived from the bundled Pokédex |
 | `showdown_bridge.py` | Active Python-to-Node bridge; callable without Gemini |
 | `showdown_calc.js` | Active Smogon adapter |
 | `optimizer.py` | Legacy, disconnected; imports missing `calculator.py` |
 | `sequence_engine.py` | Legacy fixed-hit recovery/residual simulator used by the optimizer; not a full battle simulator |
-| `files/pokedex.json` | Reference dataset; not read by the active calculator |
+| `files/pokedex.json` | Source for parser name catalog; damage data comes from Smogon |
 | `paths.py` | Legacy data paths, including files absent from this checkout |
 
 Bulk optimization and multi-turn survival planning are unsupported in the CLI.
