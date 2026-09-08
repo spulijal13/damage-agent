@@ -3,7 +3,12 @@ import os
 import tempfile
 import unittest
 
-from agent import apply_common_corrections, ensure_default_doubles
+from agent import apply_common_corrections
+from battle_builder import (
+    build_battle,
+    champions_points_to_evs,
+    ensure_default_doubles,
+)
 from showdown_bridge import run_showdown_calc, explain_showdown_damage
 
 
@@ -84,19 +89,61 @@ class DamageTests(unittest.TestCase):
         self.assertIn("Damage:", explain_showdown_damage(result))
 
     def test_corrections_preserve_parser_choices(self):
-        battle = self.battle("Drain Punch")
-        battle["field"] = {"critical": False, "weather": None}
-        battle["defender"]["item"] = "Life Orb"
-        request = {"mode": "damage", "battle": battle}
-        corrected = apply_common_corrections(copy.deepcopy(request),
+        slots = {
+            "mode": "damage",
+            "attacker": {"name": "Sneasler"},
+            "defender": {"name": "Primarina", "item": "Life Orb"},
+            "move": "Drain Punch",
+            "field": {"critical": False, "weather": None},
+        }
+        request = apply_common_corrections(copy.deepcopy(slots),
             "Sneasler Drain Punch vs Primarina holding Life Orb, no crit, not Close Combat")
-        self.assertEqual(corrected, request)
-        self.assertTrue(ensure_default_doubles(corrected, "damage")["battle"]["field"]["is_double_battle"])
-        self.assertFalse(ensure_default_doubles(corrected, "singles")["battle"]["field"]["is_double_battle"])
+        battle = request["battle"]
+        self.assertEqual(battle["move"], "Drain Punch")
+        self.assertEqual(battle["defender"]["item"], "Life Orb")
+        self.assertFalse(battle["field"]["critical"])
+        self.assertIsNone(battle["field"]["weather"])
+        self.assertTrue(ensure_default_doubles(battle, "damage")["field"]["is_double_battle"])
+        self.assertFalse(ensure_default_doubles(copy.deepcopy(battle), "singles")["field"]["is_double_battle"])
 
     def test_missing_battle_clarifies(self):
         result = apply_common_corrections({"mode": "damage"}, "damage")
         self.assertEqual(result["mode"], "clarify")
+
+    def test_champions_spread_converts_locally(self):
+        self.assertEqual(champions_points_to_evs(0), 0)
+        self.assertEqual(champions_points_to_evs(1), 4)
+        self.assertEqual(champions_points_to_evs(14), 108)
+        self.assertEqual(champions_points_to_evs(17), 132)
+        self.assertEqual(champions_points_to_evs(32), 252)
+        battle = build_battle({
+            "attacker": {"name": "Sneasler", "spread": {"atk": 32}},
+            "defender": {"name": "Primarina", "spread": {"hp": 32, "spd": 14}},
+            "move": "Dire Claw",
+        })
+        self.assertEqual(battle["attacker"]["evs"]["atk"], 252)
+        self.assertEqual(battle["defender"]["evs"]["hp"], 252)
+        self.assertEqual(battle["defender"]["evs"]["spd"], 108)
+        self.assertEqual(battle["defender"]["evs"]["def"], 0)
+
+    def test_explicit_evs_skip_champions_conversion(self):
+        battle = build_battle({
+            "attacker": {"name": "Sneasler", "evs": {"atk": 252}},
+            "defender": {"name": "Primarina"},
+            "move": "Dire Claw",
+        })
+        self.assertEqual(battle["attacker"]["evs"]["atk"], 252)
+        self.assertEqual(battle["attacker"]["evs"]["hp"], 0)
+
+    def test_default_ability_sets_weather(self):
+        battle = build_battle({
+            "attacker": {"name": "Charizard-Mega-Y"},
+            "defender": {"name": "Venusaur-Mega"},
+            "move": "Weather Ball",
+        })
+        self.assertEqual(battle["attacker"]["ability"], "Drought")
+        self.assertEqual(battle["defender"]["ability"], "Thick Fat")
+        self.assertEqual(battle["field"]["weather"], "Sun")
 
 
 if __name__ == "__main__":

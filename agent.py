@@ -1,416 +1,150 @@
 import json
 import os
+from pathlib import Path
+from dotenv import load_dotenv
 
+from battle_builder import (
+    build_battle,
+    ensure_default_doubles,
+    validate_damage_slots,
+)
 from showdown_bridge import run_showdown_calc, explain_showdown_damage
 
 
 def create_client():
     """Only require Gemini dependencies and credentials when starting the CLI."""
+
+    load_dotenv(Path(__file__).resolve().with_name(".env"))
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
-        raise ValueError("Missing GEMINI_API_KEY. Set it before starting the agent.")
+        raise ValueError("Missing GEMINI_API_KEY. Add it to .env or set it in your terminal.")
     from google import genai
     return genai.Client(api_key=api_key)
-
-
-# ============================================================
-# BASIC HELPERS
-# ============================================================
-
-def normalize_text(text):
-    if text is None:
-        return ""
-
-    return (
-        str(text)
-        .lower()
-        .replace("-", " ")
-        .replace("_", " ")
-        .strip()
-    )
 
 
 def extract_json(text):
     start = text.find("{")
     end = text.rfind("}")
-
     if start == -1 or end == -1:
         raise ValueError("No JSON object found in model response.")
-
     return text[start:end + 1]
 
 
-def is_optimization_mode(request):
-    return request.get("mode") == "bulk_optimize"
-
-
-def set_field_value(request, key, value):
-    if request.get("mode") == "damage" and "battle" in request:
-        request["battle"].setdefault("field", {})
-        request["battle"]["field"][key] = value
-
-    elif is_optimization_mode(request):
-        request.setdefault("field", {})
-        request["field"][key] = value
-
-
-def ensure_default_doubles(request, user_question):
-    q = normalize_text(user_question)
-
-    is_singles = (
-        "singles" in q
-        or "single battle" in q
-        or "1v1 singles" in q
-    )
-
-    set_field_value(request, "is_double_battle", not is_singles)
-
-    return request
-
-
-# ============================================================
-# COMMON NAME CORRECTIONS
-# ============================================================
-
-POKEMON_ALIASES = {
-    "sneasler": "Sneasler",
-    "primarina": "Primarina",
-    "kingambit": "Kingambit",
-    "kingabit": "Kingambit",
-    "glimmora": "Glimmora",
-
-    "mega venusaur": "Venusaur-Mega",
-    "megavenusaur": "Venusaur-Mega",
-    "venusaur mega": "Venusaur-Mega",
-    "venusaur-mega": "Venusaur-Mega",
-
-    "mega charizard y": "Charizard-Mega-Y",
-    "megacharizardy": "Charizard-Mega-Y",
-    "charizard mega y": "Charizard-Mega-Y",
-    "charizard-mega-y": "Charizard-Mega-Y",
-
-    "mega charizard x": "Charizard-Mega-X",
-    "megacharizardx": "Charizard-Mega-X",
-    "charizard mega x": "Charizard-Mega-X",
-    "charizard-mega-x": "Charizard-Mega-X",
+STAT_PROPERTIES = {
+    "hp": {"type": "INTEGER", "nullable": True},
+    "atk": {"type": "INTEGER", "nullable": True},
+    "def": {"type": "INTEGER", "nullable": True},
+    "spa": {"type": "INTEGER", "nullable": True},
+    "spd": {"type": "INTEGER", "nullable": True},
+    "spe": {"type": "INTEGER", "nullable": True},
 }
 
-DEFAULT_ABILITY_BY_FORM = {
-    "Venusaur-Mega": "Thick Fat",
-    "Charizard-Mega-Y": "Drought",
-    "Charizard-Mega-X": "Tough Claws",
-    "Blastoise-Mega": "Mega Launcher",
-    "Gengar-Mega": "Shadow Tag",
-    "Kangaskhan-Mega": "Parental Bond",
-    "Mawile-Mega": "Huge Power",
-    "Metagross-Mega": "Tough Claws",
-    "Salamence-Mega": "Aerilate",
-    "Tyranitar-Mega": "Sand Stream",
-    "Lucario-Mega": "Adaptability",
-    "Gardevoir-Mega": "Pixilate",
-    "Scizor-Mega": "Technician",
-    "Swampert-Mega": "Swift Swim",
-    "Sceptile-Mega": "Lightning Rod",
-    "Diancie-Mega": "Magic Bounce",
-    "Glimmora": "Toxic Debris",
+BOOST_PROPERTIES = {
+    "atk": {"type": "INTEGER", "nullable": True},
+    "def": {"type": "INTEGER", "nullable": True},
+    "spa": {"type": "INTEGER", "nullable": True},
+    "spd": {"type": "INTEGER", "nullable": True},
+    "spe": {"type": "INTEGER", "nullable": True},
 }
 
+POKEMON_SLOT_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "name": {"type": "STRING", "nullable": True},
+        "ability": {"type": "STRING", "nullable": True},
+        "item": {"type": "STRING", "nullable": True},
+        "nature": {"type": "STRING", "nullable": True},
+        "status": {"type": "STRING", "nullable": True},
+        "current_hp_percent": {"type": "NUMBER", "nullable": True},
+        "spread": {
+            "type": "OBJECT",
+            "nullable": True,
+            "properties": STAT_PROPERTIES,
+        },
+        "evs": {
+            "type": "OBJECT",
+            "nullable": True,
+            "properties": STAT_PROPERTIES,
+        },
+        "boosts": {
+            "type": "OBJECT",
+            "nullable": True,
+            "properties": BOOST_PROPERTIES,
+        },
+    },
+}
 
-def fix_pokemon_name(name):
-    if not name:
-        return name
-
-    key = normalize_text(name)
-
-    return POKEMON_ALIASES.get(key, name)
-
-
-def apply_default_abilities_to_battle(battle):
-    for role in ("attacker", "defender"):
-        pokemon = battle[role]
-        default = DEFAULT_ABILITY_BY_FORM.get(pokemon.get("name"))
-        if pokemon.get("ability") is None and default is not None:
-            pokemon["ability"] = default
-    return battle
-
-
-def apply_common_corrections(request, user_question):
-    # Normalize parsed names without overwriting the model's move, item ownership,
-    # or explicit field choices based on unrelated words in the question.
-    if request.get("mode") != "damage":
-        return request
-    battle = request.get("battle")
-    valid, message = validate_damage_battle(battle)
-    if not valid:
-        return {"mode": "clarify", "message": message}
-    for role in ("attacker", "defender"):
-        battle[role]["name"] = fix_pokemon_name(battle[role]["name"])
-    apply_default_abilities_to_battle(battle)
-
-    # Ability-based field backup.
-    # This is important for Mega Charizard Y Weather Ball.
-    if request.get("mode") == "damage" and "battle" in request:
-        battle = request["battle"]
-        field = battle.setdefault("field", {})
-
-        attacker_ability = normalize_text(battle["attacker"].get("ability"))
-        defender_ability = normalize_text(battle["defender"].get("ability"))
-
-        ability_text = f"{attacker_ability} {defender_ability}"
-
-        if field.get("weather") is None:
-            if "drought" in ability_text or "orichalcum pulse" in ability_text:
-                field["weather"] = "Sun"
-            elif "drizzle" in ability_text:
-                field["weather"] = "Rain"
-            elif "sand stream" in ability_text:
-                field["weather"] = "Sand"
-            elif "snow warning" in ability_text:
-                field["weather"] = "Snow"
-
-        if field.get("terrain") is None:
-            if "electric surge" in ability_text or "hadron engine" in ability_text:
-                field["terrain"] = "Electric"
-            elif "grassy surge" in ability_text:
-                field["terrain"] = "Grassy"
-            elif "psychic surge" in ability_text:
-                field["terrain"] = "Psychic"
-            elif "misty surge" in ability_text:
-                field["terrain"] = "Misty"
-
-    return request
-
-
-# ============================================================
-# VALIDATION
-# ============================================================
-
-def validate_damage_battle(battle):
-    if not isinstance(battle, dict):
-        return False, "I need a battle with an attacker, defender, and move."
-    if any(not isinstance(battle.get(role), dict) for role in ("attacker", "defender")):
-        return False, "I need both the attacking and defending Pokemon."
-    if not isinstance(battle.get("field", {}), dict):
-        return False, "Battle field must be an object."
-    attacker_name = battle.get("attacker", {}).get("name")
-    defender_name = battle.get("defender", {}).get("name")
-    move_name = battle.get("move")
-
-    if not attacker_name:
-        return False, "I need the attacking Pokemon."
-
-    if not defender_name:
-        return False, "I need the defending Pokemon."
-
-    if not move_name:
-        return False, "I need the move name."
-
-    return True, None
-
-
-# ============================================================
-# SYSTEM PROMPT
-# ============================================================
+DAMAGE_SLOT_SCHEMA = {
+    "type": "OBJECT",
+    "properties": {
+        "mode": {"type": "STRING", "enum": ["chat", "clarify", "damage"]},
+        "message": {"type": "STRING", "nullable": True},
+        "attacker": POKEMON_SLOT_SCHEMA,
+        "defender": POKEMON_SLOT_SCHEMA,
+        "move": {"type": "STRING", "nullable": True},
+        "field": {
+            "type": "OBJECT",
+            "nullable": True,
+            "properties": {
+                "weather": {"type": "STRING", "nullable": True},
+                "terrain": {"type": "STRING", "nullable": True},
+                "critical": {"type": "BOOLEAN", "nullable": True},
+                "reflect": {"type": "BOOLEAN", "nullable": True},
+                "light_screen": {"type": "BOOLEAN", "nullable": True},
+                "aurora_veil": {"type": "BOOLEAN", "nullable": True},
+                "is_double_battle": {"type": "BOOLEAN", "nullable": True},
+            },
+        },
+    },
+    "required": ["mode"],
+}
 
 SYSTEM_PROMPT = """
-You are a Pokemon damage calculator parsing agent.
-
-Your job is to convert the user's request into valid JSON.
-
+You extract slots for a Pokemon damage-roll calculator.
+Do not calculate damage. Do not convert stat points to EVs.
+Do not fill IVs, default EVs, or a full Showdown Pokemon object.
 Return JSON only.
-Do not include markdown.
-Do not include explanations.
-Do not calculate damage yourself.
-The final damage will be calculated by the official Showdown damage calculator.
 
-All calculations are for double battles by default.
+Modes:
+- chat: greeting or unrelated. Set message.
+- clarify: damage question missing attacker, defender, or move. Set message.
+- damage: fill attacker, defender, move, and any mentioned spreads.
 
-Only set field.is_double_battle to false if the user clearly says singles, single battle, or 1v1 singles.
+Pokemon slots:
+- name: Showdown form name. Mega Venusaur = Venusaur-Mega. Mega Charizard Y = Charizard-Mega-Y. Mega Charizard X = Charizard-Mega-X.
+- spread: Champions stat points 0-32, only stats the user mentioned. Unmentioned stats omitted.
+- evs: only if the user clearly asked for normal EVs. Do not fill both spread and evs.
+- ability, item, nature, status, boosts, current_hp_percent: only if mentioned, on the Pokemon they belong to.
 
-Pokemon Champions spread rules:
-- All calculations use Pokemon Champions stat points by default.
-- Total spread point limit is 66.
-- Maximum points in one stat is 32.
-- The JSON must use normal EV-equivalent numbers in the evs field.
+Champions points (not EVs):
+- A number with a stat is points unless the user says EVs.
+- max HP / max Atk / max SpA / max SpD / max Speed = 32 in that spread field.
+- 14 in SpD = spread.spd 14. 17 in SpD = 17. no points in defense = spread.def 0.
 
-Pokemon Champions Stat Point conversion:
-- 0 points = 0 EV equivalent.
-- For any value from 1 to 32, use this formula:
-  EV equivalent = points * 8 - 4.
-- Examples:
-  1 point = 4 EV equivalent.
-  4 points = 28 EV equivalent.
-  8 points = 60 EV equivalent.
-  14 points = 108 EV equivalent.
-  16 points = 124 EV equivalent.
-  17 points = 132 EV equivalent.
-  32 points = 252 EV equivalent.
-- If the user says "14 in SpD", set spd to 108.
-- If the user says "17 in SpD", set spd to 132.
-- If the user says "max SpD", set spd to 252.
-- If the user says "max HP", set hp to 252.
-- If the user says "max SpA", set spa to 252.
-- If the user says "max Speed", set spe to 252.
-- If the user says "no stat points in defense", set def to 0.
-- If the user gives a number followed by a stat, treat that number as Champions Stat Points unless they clearly say normal EVs.
+Move: canonical move name after the attacker, or after "with".
+"X Move against/into/vs Y" means attacker X, move, defender Y.
+Never invent Pokemon or moves. Never parse "max attack" or a nature as a move.
 
-Unsupported requests:
-- Bulk/spread optimization and multi-turn survival planning are not connected.
-- For these requests return mode "clarify" with a message explaining that only direct damage calculations are supported.
-- Do not add a grounded flag; grounding is inferred by the calculator from typing, ability, and item.
-- Status values must use Showdown codes: brn, par, psn, tox, slp, frz.
-- Respect negation: "no crit" means critical is false, and "no rain" must not enable Rain.
+Field, only if mentioned:
+- crit / critical => critical true. no crit => critical false.
+- sun, rain, sand, snow, terrains, reflect, light screen, aurora veil.
+- singles / single battle / 1v1 singles => is_double_battle false.
 
-Use these modes:
-
-1. chat
-
-Use this when the user says hello or says something unrelated to Pokemon damage.
-
-Return:
-{
-  "mode": "chat",
-  "message": "Ask me a Pokemon damage question."
-}
-
-2. clarify
-
-Use this when the user is asking for damage but did not provide enough information.
-
-Return:
-{
-  "mode": "clarify",
-  "message": "I need the move name before I can calculate this."
-}
-
-Use clarify mode if:
-- attacker is missing
-- defender is missing
-- move is missing
-- the request is too ambiguous
-
-Never invent Pokemon names.
-Never invent move names.
-
-3. damage
-
-Use this when the user asks for one specific damage calculation.
-
-Return:
-{
-  "mode": "damage",
-  "battle": {
-    "gen": 9,
-    "attacker": {
-      "name": "Pokemon name",
-      "level": 50,
-      "evs": {"hp": 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0},
-      "ivs": {"hp": 31, "atk": 31, "def": 31, "spa": 31, "spd": 31, "spe": 31},
-      "nature": "Serious",
-      "ability": null,
-      "item": null,
-      "boosts": {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0},
-      "status": null,
-      "current_hp_percent": 100
-    },
-    "defender": {
-      "name": "Pokemon name",
-      "level": 50,
-      "evs": {"hp": 0, "atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0},
-      "ivs": {"hp": 31, "atk": 31, "def": 31, "spa": 31, "spd": 31, "spe": 31},
-      "nature": "Serious",
-      "ability": null,
-      "item": null,
-      "boosts": {"atk": 0, "def": 0, "spa": 0, "spd": 0, "spe": 0},
-      "status": null,
-      "current_hp_percent": 100
-    },
-    "move": "Move name",
-    "field": {
-      "weather": null,
-      "terrain": null,
-      "critical": false,
-      "reflect": false,
-      "light_screen": false,
-      "aurora_veil": false,
-      "is_double_battle": true
-    }
-  }
-}
-
-General parsing rules:
-- Default level is 50.
-- Default IVs are 31.
-- Default EVs are 0 unless stated.
-- If the user says "crit" or "critical", set field.critical to true.
-- If the user says "under the sun", "in sun", or "sun", set field.weather to "Sun".
-- If the user says "rain", set field.weather to "Rain".
-- If the user says "sand", set field.weather to "Sand".
-- If the user says "snow", set field.weather to "Snow".
-- If the user says "spa raising nature", use Modest.
-- If the user says "attack raising nature", use Adamant.
-- If the user says "speed raising nature" or "Timid", use Timid for special attackers.
-- If the user says "Jolly", use Jolly.
-
-Natural language battle parsing rules:
-- When the user writes a Pokemon name followed by a move name, treat the Pokemon as the attacker and the move as the move being used.
-- Example: "Mega Floette Moonblast" means attacker is "Floette-Mega" and move is "Moonblast".
-- Example: "Mega Charizard Y Weather Ball" means attacker is "Charizard-Mega-Y" and move is "Weather Ball".
-- Example: "Sneasler Dire Claw" means attacker is "Sneasler" and move is "Dire Claw".
-- Do not treat the move name as part of the Pokemon name.
-- Do not ask for the move if a valid move name appears right after the attacker name.
-- If the user says "against", "into", "to", or "vs", the Pokemon after that word is usually the defender.
-- Example: "Mega Floette Moonblast against Sneasler" means Floette-Mega uses Moonblast into Sneasler.
-- Example: "Mega Charizard Y Heat Wave into Mega Venusaur" means Charizard-Mega-Y uses Heat Wave into Venusaur-Mega.
-- If the user says "with [move name]" after the attacker, treat that as the move.
-- Example: "Mega Floette with Moonblast against Sneasler" means Floette-Mega uses Moonblast into Sneasler.
-
-Mega form parsing rules:
-- "Mega Venusaur" must be returned as "Venusaur-Mega".
-- "Mega Charizard Y" must be returned as "Charizard-Mega-Y".
-- "Mega Charizard X" must be returned as "Charizard-Mega-X".
-- Do not return names like "Mega Charizard Y" or "Mega Venusaur".
-- Always return the exact Showdown-style form name.
-
-Default ability rules:
-- If the user does not mention Mega Venusaur's ability, use "Thick Fat".
-- If the user does not mention Mega Charizard Y's ability, use "Drought".
-- If the user does not mention Mega Charizard X's ability, use "Tough Claws".
-- If the user does not mention Glimmora's ability, use "Toxic Debris".
-- If the user mentions an ability, use the mentioned ability.
-
-Move parsing rules:
-- Interpret move names from context, allowing differences in capitalization,
-  spacing, punctuation, and clear spelling mistakes.
-- Return the canonical Pokemon move name.
-- If the intended move is ambiguous or unknown, use clarify mode and ask
-  the user to specify the move. Never invent a move.
-- Never parse "max attack" as a move.
-- Never parse "Jolly" as a move.
-
-Item parsing rules:
-- If the user mentions an item, place it on the Pokemon it describes.
-- Chople means Chople Berry.
-- Life Orb means Life Orb.
-- Choice Band means Choice Band.
-- Choice Specs means Choice Specs.
-
-Return valid JSON only.
+Natures if described: spa raising = Modest, attack raising = Adamant, speed raising special = Timid, Jolly = Jolly.
+Status codes: brn, par, psn, tox, slp, frz.
 """
 
 
-# ============================================================
-# GEMINI CALL
-# ============================================================
-
-def make_battle_dict(user_question, client):
+def parse_damage_slots(user_question, client):
     from google.genai import types
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
-        contents=f"{SYSTEM_PROMPT}\n\nUser question:\n{user_question}",
+        contents=user_question,
         config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,
             response_mime_type="application/json",
+            response_schema=DAMAGE_SLOT_SCHEMA,
             temperature=0.1,
         ),
     )
@@ -422,14 +156,29 @@ def make_battle_dict(user_question, client):
     return request
 
 
-# ============================================================
-# MAIN LOOP
-# ============================================================
+def prepare_damage_request(extraction, user_question):
+    mode = extraction.get("mode")
+    if mode != "damage":
+        return extraction
+
+    valid, message = validate_damage_slots(extraction)
+    if not valid:
+        return {"mode": "clarify", "message": message}
+
+    battle = build_battle(extraction)
+    ensure_default_doubles(battle, user_question)
+    return {"mode": "damage", "slots": extraction, "battle": battle}
+
+
+def apply_common_corrections(request, user_question=""):
+    """Turn Gemini slots into a calc-ready request, or clarify if slots are incomplete."""
+    return prepare_damage_request(request, user_question)
+
 
 def run_agent():
     client = create_client()
     print("Pokemon Damage Calc Agent using Google Gemini + Showdown Calc")
-    print("Pokemon Champions parsing: 66 total points, 32 max per stat, doubles by default.")
+    print("Gemini fills attacker, defender, move, and spreads. Calc assembly is local.")
     print("Type a battle question. Type 'quit' to stop.")
     print()
 
@@ -444,10 +193,8 @@ def run_agent():
             continue
 
         try:
-            battle_request = make_battle_dict(user_question, client)
-            battle_request = apply_common_corrections(battle_request, user_question)
-            battle_request = ensure_default_doubles(battle_request, user_question)
-
+            extraction = parse_damage_slots(user_question, client)
+            battle_request = prepare_damage_request(extraction, user_question)
             mode = battle_request.get("mode")
 
             if mode == "chat":
@@ -464,31 +211,16 @@ def run_agent():
 
             if mode == "damage":
                 battle = battle_request["battle"]
-
-                valid, error_message = validate_damage_battle(battle)
-
-                if not valid:
-                    print()
-                    print(error_message)
-                    print()
-                    continue
-
+                print()
+                print("Parsed slots:")
+                print(json.dumps(extraction, indent=2))
                 print()
                 print("Battle dictionary:")
                 print(json.dumps(battle, indent=2))
                 print()
-
                 result = run_showdown_calc(battle)
-
                 print("Result:")
                 print(explain_showdown_damage(result))
-                print()
-                continue
-
-            if mode == "bulk_optimize":
-                print()
-                print("Bulk optimization is not connected yet after switching to Showdown.")
-                print("Please ask for a direct damage calculation instead.")
                 print()
                 continue
 
