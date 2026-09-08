@@ -1,4 +1,4 @@
-"""Names-only parser context derived from the bundled Pokédex."""
+"""Parser names and local ability defaults from the bundled Pokédex."""
 
 import json
 from functools import lru_cache
@@ -8,10 +8,22 @@ POKEDEX_PATH = Path(__file__).resolve().parent / "files" / "pokedex.json"
 
 
 @lru_cache(maxsize=1)
-def pokemon_names():
-    """Read once per process; updating the Pokédex needs no generated file."""
+def _pokemon_by_name():
+    """Read once per process, preserving the file's ability order."""
     pokedex = json.loads(POKEDEX_PATH.read_text(encoding="utf-8"))
-    return frozenset(entry["name"] for entry in pokedex.values())
+    return {entry["name"]: entry for entry in pokedex.values()}
+
+
+@lru_cache(maxsize=1)
+def pokemon_names():
+    """Updating the Pokédex needs no generated file."""
+    return frozenset(_pokemon_by_name())
+
+
+def default_ability(name):
+    """Use the first listed ability for the exact species/form, if available."""
+    entry = _pokemon_by_name().get(name, {})
+    return next(iter(entry.get("abilities", {}).values()), None)
 
 
 @lru_cache(maxsize=1)

@@ -1,27 +1,8 @@
+from pokemon_catalog import default_ability
+
 STAT_KEYS = ("hp", "atk", "def", "spa", "spd", "spe")
 BOOST_KEYS = ("atk", "def", "spa", "spd", "spe")
 CHAMPIONS_MAX_POINTS_PER_STAT = 32
-
-DEFAULT_ABILITY_BY_FORM = {
-    "Venusaur-Mega": "Thick Fat",
-    "Charizard-Mega-Y": "Drought",
-    "Charizard-Mega-X": "Tough Claws",
-    "Blastoise-Mega": "Mega Launcher",
-    "Gengar-Mega": "Shadow Tag",
-    "Kangaskhan-Mega": "Parental Bond",
-    "Mawile-Mega": "Huge Power",
-    "Metagross-Mega": "Tough Claws",
-    "Salamence-Mega": "Aerilate",
-    "Tyranitar-Mega": "Sand Stream",
-    "Lucario-Mega": "Adaptability",
-    "Gardevoir-Mega": "Pixilate",
-    "Scizor-Mega": "Technician",
-    "Swampert-Mega": "Swift Swim",
-    "Sceptile-Mega": "Lightning Rod",
-    "Diancie-Mega": "Magic Bounce",
-    "Glimmora": "Toxic Debris",
-}
-
 
 def normalize_text(text):
     if text is None:
@@ -110,7 +91,7 @@ def build_pokemon(slot):
     name = slot.get("name")
     ability = slot.get("ability")
     if ability is None:
-        ability = DEFAULT_ABILITY_BY_FORM.get(name)
+        ability = default_ability(name)
     return {
         "name": name,
         "level": slot.get("level") or 50,
