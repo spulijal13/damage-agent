@@ -2,7 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 
-CALCULATOR_PATH = Path(__file__).resolve().with_name("showdown_calc.js")
+CALCULATOR_PATH = Path(__file__).resolve().parents[1] / "calculator" / "showdown_calc.js"
 
 
 def run_showdown_calc(battle):

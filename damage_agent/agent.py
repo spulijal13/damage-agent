@@ -1,15 +1,15 @@
 import json
 import os
 from pathlib import Path
-from pokemon_catalog import pokemon_names, pokemon_names_json
+from damage_agent.pokemon_catalog import pokemon_names, pokemon_names_json
 
-from battle_builder import (
+from damage_agent.battle_builder import (
     build_battle,
     ensure_default_doubles,
     validate_damage_slots,
 )
-from showdown_bridge import run_showdown_calc, explain_showdown_damage
-from battle_summary import format_battle_summary
+from damage_agent.showdown_bridge import run_showdown_calc, explain_showdown_damage
+from damage_agent.battle_summary import format_battle_summary
 
 
 def create_client():
@@ -17,7 +17,7 @@ def create_client():
 
     from dotenv import load_dotenv
 
-    load_dotenv(Path(__file__).resolve().with_name(".env"))
+    load_dotenv(Path(__file__).resolve().parents[1] / ".env")
     api_key = os.environ.get("GEMINI_API_KEY")
     if not api_key:
         raise ValueError("Missing GEMINI_API_KEY. Add it to .env or set it in your terminal.")

@@ -4,7 +4,7 @@ import json
 from functools import lru_cache
 from pathlib import Path
 
-POKEDEX_PATH = Path(__file__).resolve().parent / "files" / "pokedex.json"
+POKEDEX_PATH = Path(__file__).resolve().parents[1] / "data" / "pokedex.json"
 
 
 @lru_cache(maxsize=1)

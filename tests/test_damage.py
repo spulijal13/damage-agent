@@ -4,14 +4,14 @@ import json
 import tempfile
 import unittest
 
-from agent import apply_common_corrections, build_system_prompt
-from pokemon_catalog import POKEDEX_PATH, pokemon_names, pokemon_names_json
-from battle_builder import (
+from damage_agent.agent import apply_common_corrections, build_system_prompt
+from damage_agent.pokemon_catalog import POKEDEX_PATH, pokemon_names, pokemon_names_json
+from damage_agent.battle_builder import (
     build_battle,
     champions_points_to_evs,
     ensure_default_doubles,
 )
-from showdown_bridge import run_showdown_calc, explain_showdown_damage
+from damage_agent.showdown_bridge import run_showdown_calc, explain_showdown_damage
 
 
 class DamageTests(unittest.TestCase):

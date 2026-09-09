@@ -9,7 +9,7 @@ from calculator import (
     CHAMPIONS_MAX_POINTS_PER_STAT,
 )
 
-from sequence_engine import simulate_hit_sequence, choose_damage_from_rolls
+from legacy.sequence_engine import simulate_hit_sequence, choose_damage_from_rolls
 
 
 def get_defensive_stat_for_move(move_name):

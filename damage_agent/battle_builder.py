@@ -1,4 +1,4 @@
-from pokemon_catalog import default_ability
+from damage_agent.pokemon_catalog import default_ability
 
 STAT_KEYS = ("hp", "atk", "def", "spa", "spd", "spe")
 BOOST_KEYS = ("atk", "def", "spa", "spd", "spe")

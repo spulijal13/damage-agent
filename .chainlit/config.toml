@@ -1,0 +1,19 @@
+[project]
+enable_telemetry = false
+
+[features]
+unsafe_allow_html = false
+latex = false
+
+[features.spontaneous_file_upload]
+enabled = false
+
+[UI]
+name = "Damage Agent"
+description = "Pokémon Champions damage calculator"
+default_theme = "dark"
+cot = "hidden"
+custom_css = "/public/chat.css"
+
+[meta]
+generated_by = "2.12.0"

@@ -1,7 +1,7 @@
 from pathlib import Path
 
-BASE_DIR = Path(__file__).resolve().parent
-FILES_DIR = BASE_DIR / "files"
+BASE_DIR = Path(__file__).resolve().parents[1]
+FILES_DIR = BASE_DIR / "data"
 
 POKEDEX_PATH = FILES_DIR / "pokedex.json"
 MOVES_PATH = FILES_DIR / "moves.json"

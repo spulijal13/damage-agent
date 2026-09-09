@@ -1,0 +1,12 @@
+.git
+.venv
+.env
+.env.*
+**/__pycache__
+**/*.pyc
+node_modules
+.DS_Store
+tests
+legacy
+.chainlit/translations
+.chainlit/.langchain.db

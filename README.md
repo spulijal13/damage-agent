@@ -1,5 +1,18 @@
 # Pokémon Damage Agent
 
+## Deploy on Render
+
+Push the current project (including `Dockerfile` and `render.yaml`) to GitHub.
+In Render, choose **New → Blueprint**, connect the repository, and choose the
+branch containing these files. Supply `GEMINI_API_KEY` when prompted and deploy.
+The Blueprint selects the Free plan. Render builds Python and Node together and
+provides the public URL when deployment finishes.
+
+Keep `.env` local; it is excluded from the Docker build. The hosted app uses
+Render's environment variable. Free services sleep after 15 minutes of inactivity
+and may take about a minute to wake. Chat history is session-only. Public visitors
+use the server's Gemini quota; hosting does not include Gemini API usage.
+
 A command-line assistant that uses Gemini to parse battle questions and
 `@smogon/calc` to calculate damage. Questions are independent; clarification
 replies must restate the full battle.
@@ -14,7 +27,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 npm ci
 export GEMINI_API_KEY="your-key"
-python agent.py
+python -m damage_agent.agent
 ```
 
 Example: `Sneasler Dire Claw into Primarina with max HP, no crit`
@@ -30,7 +43,7 @@ Type `quit` to exit. Questions are sent to Gemini; damage is calculated locally.
 - Doubles by default; explicitly request singles to change that.
 
 Gemini receives a compact JSON list of every canonical Pokémon/form name, derived
-at runtime by `pokemon_catalog.py` from `files/pokedex.json`. It resolves clear
+at runtime by `damage_agent/pokemon_catalog.py` from `data/pokedex.json`. It resolves clear
 misspellings and alternate form wording as part of parsing, and is instructed to
 ask for clarification when the intended species/form is ambiguous. Python checks
 that returned names exist in the catalog; it does not maintain aliases or perform
@@ -55,15 +68,15 @@ you can inspect assumptions. Natural-language parsing can still make mistakes.
 
 | File | Status |
 | --- | --- |
-| `agent.py` | Active Gemini parser and CLI |
-| `battle_builder.py` | Local battle defaults and Champions point conversion |
-| `pokemon_catalog.py` | Names-only context derived from the bundled Pokédex |
-| `showdown_bridge.py` | Active Python-to-Node bridge; callable without Gemini |
-| `showdown_calc.js` | Active Smogon adapter |
-| `optimizer.py` | Legacy, disconnected; imports missing `calculator.py` |
-| `sequence_engine.py` | Legacy fixed-hit recovery/residual simulator used by the optimizer; not a full battle simulator |
-| `files/pokedex.json` | Source for parser name catalog; damage data comes from Smogon |
-| `paths.py` | Legacy data paths, including files absent from this checkout |
+| `damage_agent/agent.py` | Active Gemini parser and CLI |
+| `damage_agent/battle_builder.py` | Local battle defaults and Champions point conversion |
+| `damage_agent/pokemon_catalog.py` | Names-only context derived from the bundled Pokédex |
+| `damage_agent/showdown_bridge.py` | Active Python-to-Node bridge; callable without Gemini |
+| `calculator/showdown_calc.js` | Active Smogon adapter |
+| `legacy/optimizer.py` | Legacy, disconnected; imports missing `calculator.py` |
+| `legacy/sequence_engine.py` | Legacy fixed-hit recovery/residual simulator used by the optimizer; not a full battle simulator |
+| `data/pokedex.json` | Source for parser name catalog; damage data comes from Smogon |
+| `legacy/paths.py` | Legacy data paths, including files absent from this checkout |
 
 Bulk optimization and multi-turn survival planning are unsupported in the CLI.
 Reconnecting them requires migrating the optimizer's calculator interface and
@@ -77,3 +90,42 @@ python3 -B -m unittest discover -s tests -v
 
 Tests exercise the local calculator bridge and parser postprocessing without a
 Gemini API key or network calls. Live Gemini parsing is not covered.
+
+## Chat frontend (Chainlit)
+
+From the repository directory:
+
+```sh
+source .venv/bin/activate
+pip install -r requirements.txt
+npm ci
+chainlit run chainlit_app.py -w --host 127.0.0.1
+```
+
+Open http://localhost:8000. The frontend uses the same `GEMINI_API_KEY` from
+`.env` as the CLI. It includes a black theme, a chat composer, and visible message
+history within the current session. Chats are not persisted across new sessions.
+Each request still needs the full battle; previous messages are not sent to Gemini.
+The existing CLI remains available through `python -m damage_agent.agent`.
+
+## Repository layout
+
+```text
+Damage_Agent/
+├── damage_agent/       # Gemini parser, battle assembly, summaries, Node bridge
+├── frontend/           # Chainlit chat entry point
+├── calculator/         # Smogon JavaScript adapter
+├── data/               # Pokédex JSON
+├── legacy/             # Disconnected optimizer and sequence simulator
+├── tests/              # Existing unit tests
+├── public/             # Chainlit theme and styles
+├── .chainlit/          # Chainlit configuration
+├── chainlit_app.py     # Thin launcher for the frontend
+├── chainlit.md         # Chainlit welcome/help content
+├── requirements.txt    # Python dependencies
+└── package.json        # Node dependencies
+```
+
+Run commands from the repository root. Chainlit discovers `public/`, `.chainlit/`,
+and `chainlit.md` there, so these frontend resources intentionally stay at the root.
+Keep `.env` at the root as well.
