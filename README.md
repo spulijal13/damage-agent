@@ -42,8 +42,9 @@ prompt tokens to each request. No separate generated data file needs maintaining
 The battle builder defaults to generation 9, level 50, 31 IVs, zero EVs, and a neutral
 nature. Gemini interprets numeric stat investments as Champions points; Python converts them:
 zero maps to zero EVs; positive points map to `8 * points - 4`. Python caps points at 32 per stat. The 66-point total budget is not currently
-validated. Explicit normal EV requests
-are also accepted. This is a generation 9 calculation backend, not a complete
+validated. All CLI investments use Champions points, even when called EVs:
+"32 HP EVs" means 32 Champions points (252 calculator EVs). The summary and
+Smogon result display converted calculator EVs. This is a generation 9 calculation backend, not a complete
 Champions ruleset implementation.
 
 Grounding is inferred by Smogon from species, ability, item, and field mechanics.

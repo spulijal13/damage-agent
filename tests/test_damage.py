@@ -147,9 +147,9 @@ class DamageTests(unittest.TestCase):
         self.assertEqual(battle["defender"]["evs"]["spd"], 108)
         self.assertEqual(battle["defender"]["evs"]["def"], 0)
 
-    def test_explicit_evs_skip_champions_conversion(self):
+    def test_evs_label_still_uses_champions_conversion(self):
         battle = build_battle({
-            "attacker": {"name": "Sneasler", "evs": {"atk": 252}},
+            "attacker": {"name": "Sneasler", "evs": {"atk": 32}},
             "defender": {"name": "Primarina"},
             "move": "Dire Claw",
         })

@@ -64,11 +64,6 @@ POKEMON_SLOT_SCHEMA = {
             "nullable": True,
             "properties": STAT_PROPERTIES,
         },
-        "evs": {
-            "type": "OBJECT",
-            "nullable": True,
-            "properties": STAT_PROPERTIES,
-        },
         "boosts": {
             "type": "OBJECT",
             "nullable": True,
@@ -119,11 +114,12 @@ Pokemon slots:
 - Preserve requested forms. If multiple species/forms are plausible and the question does not distinguish them, use clarify and ask which one; do not guess a form.
 - If there is no reasonable match in the list, use clarify. Never invent a name.
 - spread: Champions stat points 0-32, only stats the user mentioned. Unmentioned stats omitted.
-- evs: only if the user clearly asked for normal EVs. Do not fill both spread and evs.
+- Always use spread for stat investments, including when the user calls them EVs. This app uses Champions points exclusively.
 - ability, item, nature, status, boosts, current_hp_percent: only if mentioned, on the Pokemon they belong to.
 
 Champions points (not EVs):
-- A number with a stat is points unless the user says EVs.
+- A number with a stat always means Champions points, even if the user says EVs or normal EVs. Never output an evs field.
+- "32 HP EVs" means spread.hp 32. "max attack" means spread.atk 32.
 - max HP / max Atk / max SpA / max SpD / max Speed = 32 in that spread field.
 - 14 in SpD = spread.spd 14. 17 in SpD = 17. no points in defense = spread.def 0.
 

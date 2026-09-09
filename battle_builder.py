@@ -53,11 +53,8 @@ def resolve_evs(slot):
     if not isinstance(slot, dict):
         return evs
 
-    explicit = slot.get("evs")
-    if isinstance(explicit, dict) and any(value is not None for value in explicit.values()):
-        return _int_map(explicit, STAT_KEYS, default=0)
-
-    spread = slot.get("spread") or {}
+    # Parser investments always use Champions units, even if labeled "evs".
+    spread = slot.get("spread") or slot.get("evs") or {}
     for key, points in _int_map(spread, STAT_KEYS, default=0).items():
         evs[key] = champions_points_to_evs(points)
     return evs
