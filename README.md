@@ -1,22 +1,5 @@
 # Pokémon Damage Agent
 
-## Deploy on Render
-
-Push the current project (including `Dockerfile` and `render.yaml`) to GitHub.
-In Render, choose **New → Blueprint**, connect the repository, and choose the
-branch containing these files. Supply `GEMINI_API_KEY` when prompted and deploy.
-The Blueprint selects the Free plan. Render builds Python and Node together and
-provides the public URL when deployment finishes.
-
-Keep `.env` local; it is excluded from the Docker build. The hosted app uses
-Render's environment variable. Free services sleep after 15 minutes of inactivity
-and may take about a minute to wake. Chat history is session-only. Public visitors
-use the server's Gemini quota; hosting does not include Gemini API usage.
-
-A command-line assistant that uses Gemini to parse battle questions and
-`@smogon/calc` to calculate damage. Questions are independent; clarification
-replies must restate the full battle.
-
 ## Setup and run
 
 Requires Python 3.10+ and Node.js with npm.
