@@ -71,6 +71,14 @@ function createTeamDropdown(control) {
       row.setAttribute('role', 'option');
       row.setAttribute('aria-selected', 'false');
       row.textContent = option.textContent || option.value;
+      if (option.dataset.type) {
+        const icon = document.createElement('img');
+        icon.className = 'move-type-icon';
+        icon.src = `/api/teams/type-icons/${encodeURIComponent(option.dataset.type)}`;
+        icon.alt = option.dataset.type;
+        icon.loading = 'lazy';
+        row.prepend(icon);
+      }
       // Keep focus on the combobox until selection has completed.
       row.addEventListener('mousedown', event => event.preventDefault());
       row.addEventListener('click', () => choose(index));

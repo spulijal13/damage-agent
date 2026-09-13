@@ -18,3 +18,15 @@ main { display:grid; grid-template-columns:280px 1fr; border:1px solid var(--lin
 .stat.nature-up input[type=range] { accent-color:var(--accent); }
 .stat.nature-down input[type=range] { accent-color:#ffb3a9; }
 #nature-effect { margin:10px 0 0; }
+
+.move-type-icon { width:24px; height:24px; object-fit:contain; flex-shrink:0; vertical-align:middle; }
+.team-option:has(.move-type-icon) { display:flex; align-items:center; gap:9px; }
+.move-details { margin-top:10px; padding:13px; border:1px solid var(--line); border-radius:9px; background:#12171c; }
+.move-detail-heading { display:flex; align-items:center; gap:8px; font-size:12px; }
+.move-detail-heading > span { margin-left:auto; color:var(--muted); font-size:11px; }
+.move-numbers { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:14px 0; }
+.move-numbers dt { color:var(--muted); font-size:10px; margin-bottom:4px; }
+.move-numbers dd { margin:0; font-size:13px; font-weight:600; }
+.move-details p { font-size:12px; margin:8px 0 0; white-space:pre-line; }
+.move-details summary { color:var(--accent); cursor:pointer; font-size:11px; margin-top:10px; }
+.move-details .ability-preview { color:var(--accent); font-size:11px; }

@@ -4,7 +4,7 @@ import unicodedata
 from functools import lru_cache
 from pathlib import Path
 
-ART_ROOT = Path(__file__).resolve().parents[1] / 'Sugimori_Art'
+ART_ROOT = Path(__file__).resolve().parents[1] / 'images' / 'pokemon_art'
 
 
 def normalized(name):

@@ -167,10 +167,16 @@ Additional stat-display verification:
 node tests/test_team_stats.js
 ```
 
-The supplied `Sugimori_Art/` folder is also supported directly and included in the
+The supplied `images/pokemon_art/` folder is also supported directly and included in the
 Docker image. `damage_agent/artwork.py` indexes numbered PNGs, prefers the main
 collection over alternate versions, and maps form naming differences. Matched
 images are served through `/api/teams/art/{pokemon_id}` and shown on selection and
 saved team cards. When a form name does not match, artwork falls back to the same Pokédex
 number, preferring the main species illustration. If that number has no artwork,
 the existing `public/pokemon/` fallback and placeholder remain available. Restart Chainlit after adding artwork files.
+
+Selecting a move now displays its base PP, type icon, category, base power,
+accuracy, priority, and short description, with an expandable full description.
+Details are served from the bundled Showdown snapshot `data/moves.json`; see
+`data/moves-source.md` for provenance. No live request is made when selecting moves.
+Type PNGs are served from `images/type_icons/` and also appear in move suggestions.

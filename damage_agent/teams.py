@@ -24,6 +24,7 @@ def catalog():
     # Cosmetic forms inherit their species data in the bundled Showdown dataset.
     pokedex = {key: {**by_name.get(p.get('baseSpecies'), {}), **p}
                for key, p in pokedex.items()}
+    choices['move_details'] = json.loads((ROOT / 'data/moves.json').read_text())
     choices['pokemon'] = [
         {'name': p['name'], 'id': key, 'num': p['num'],
          'types': p['types'], 'base_stats': p['baseStats'],

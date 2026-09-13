@@ -110,8 +110,36 @@ function setSpecies(member = null) {
     };
   });
   [1,2,3,4].forEach(i=>$(`move-${i}`).value=member?.[`move_${i}`] ?? '');
+  updateMoveDetails();
   syncTeamDropdowns();
   updateStats();
+}
+function moveDetails(name) {
+  return catalog.move_details[name.toLowerCase().replace(/[^a-z0-9]/g, '')];
+}
+function typeIcon(type) {
+  return `<img class="move-type-icon" src="/api/teams/type-icons/${encodeURIComponent(type)}" alt="" loading="lazy">`;
+}
+function updateMoveDetails() {
+  [1,2,3,4].forEach(i => {
+    const panel = $(`move-${i}-details`);
+    const name = $(`move-${i}`).value.trim();
+    const move = moveDetails(name);
+    panel.hidden = !name;
+    if (!move) {
+      panel.textContent = name ? 'Select a listed move to see its details.' : '';
+      return;
+    }
+    const power = move.basePower || (move.damage || move.damageCallback || move.basePowerCallback ? 'Variable / fixed' : '—');
+    const preview = abilityMovePreview(move, $('ability').value, catalog.move_traits[name.toLowerCase().replace(/[^a-z0-9]/g, '')]);
+    const powerSuffix = preview.adjustedPower !== null ? ` (${preview.adjustedPower})` : '';
+    const accuracy = move.accuracy === true ? 'No accuracy check' : `${move.accuracy}%`;
+    panel.innerHTML = `<div class="move-detail-heading">${typeIcon(preview.type)}<strong>${escapeHTML(preview.type)}</strong><span>${escapeHTML(move.category)}</span></div>
+      <dl class="move-numbers"><div><dt>PP</dt><dd>${move.pp}</dd></div><div><dt>Base power</dt><dd>${escapeHTML(power)}${powerSuffix}</dd></div><div><dt>Accuracy</dt><dd>${accuracy}</dd></div><div><dt>Priority</dt><dd>${move.priority > 0 ? '+' : ''}${move.priority}</dd></div></dl>
+      ${preview.note ? `<p class="ability-preview">${escapeHTML(preview.note)}</p>` : ''}
+      <p>${escapeHTML(move.shortDesc || '')}</p>
+      ${move.desc && move.desc !== move.shortDesc ? `<details><summary>Full description</summary><p>${escapeHTML(move.desc)}</p></details>` : ''}`;
+  });
 }
 function updateStats() {
   if (!species) return;
@@ -146,6 +174,7 @@ window.addEventListener('beforeunload', e=>{if(dirty && $('editor').open){e.prev
 $('pokemon-form').addEventListener('input', ()=>{dirty=true;});
 $('species').oninput = () => setSpecies();
 $('nature').onchange = updateStats;
+$('ability').onchange = updateMoveDetails;
 $('pokemon-form').onsubmit = async event => {
   event.preventDefault();
   if (!species || saving) return;
@@ -174,7 +203,9 @@ async function init() {
     $('pokemon-options').innerHTML = catalog.pokemon.map(p=>`<option value="${escapeHTML(p.name)}"></option>`).join('');
     for (const [id, values] of [['item-options',catalog.items],['move-options',catalog.moves]]) $(id).innerHTML=values.map(v=>`<option value="${escapeHTML(v)}"></option>`).join('');
     $('nature').innerHTML = catalog.natures.map(n=>`<option value="${escapeHTML(n.name)}">${escapeHTML(n.name)}${n.plus!==n.minus ? ` (+${labels[n.plus]}, −${labels[n.minus]})` : ' (neutral)'}</option>`).join('');
-    $('moves').innerHTML = [1,2,3,4].map(i=>`<div><label for="move-${i}">Move ${i}</label><input id="move-${i}" list="move-options" placeholder="Select a move" autocomplete="off"></div>`).join('');
+    $('moves').innerHTML = [1,2,3,4].map(i=>`<div><label for="move-${i}">Move ${i}</label><input id="move-${i}" list="move-options" placeholder="Select a move" autocomplete="off"><div id="move-${i}-details" class="move-details" aria-live="polite" hidden></div></div>`).join('');
+    [...$('move-options').options].forEach(option => { option.dataset.type = moveDetails(option.value)?.type || ''; });
+    [1,2,3,4].forEach(i => $(`move-${i}`).addEventListener('input', updateMoveDetails));
     document.querySelectorAll('#pokemon-form input[list], #pokemon-form select').forEach(createTeamDropdown);
     await refresh();
     $('create-team').querySelector('button').disabled = false;

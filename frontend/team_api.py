@@ -26,6 +26,19 @@ def call(fn, *args):
         raise HTTPException(404, str(exc)) from exc
 
 
+@router.get('/type-icons/{type_name}')
+def get_type_icon(type_name: str):
+    allowed = {'Normal', 'Fire', 'Water', 'Electric', 'Grass', 'Ice', 'Fighting',
+               'Poison', 'Ground', 'Flying', 'Psychic', 'Bug', 'Rock', 'Ghost',
+               'Dragon', 'Dark', 'Steel', 'Fairy', 'Stellar'}
+    if type_name not in allowed:
+        raise HTTPException(404, 'Type icon not found.')
+    path = teams.ROOT / 'images/type_icons' / f'{type_name}_icon_SV.png'
+    if not path.is_file():
+        raise HTTPException(404, 'Type icon not found.')
+    return FileResponse(path, media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
+
+
 @router.get('/art/{pokemon_id}')
 def get_art(pokemon_id: str):
     pokemon = next((p for p in teams.catalog()['pokemon'] if p['id'] == pokemon_id), None)
