@@ -1,4 +1,6 @@
 """Persistent shared team library. Stat investments are Champions points, not EVs."""
+from damage_agent.artwork import artwork_path
+
 import json
 import os
 import sqlite3
@@ -25,9 +27,12 @@ def catalog():
     choices['pokemon'] = [
         {'name': p['name'], 'id': key, 'num': p['num'],
          'types': p['types'], 'base_stats': p['baseStats'],
-         'abilities': list(dict.fromkeys(p['abilities'].values()))}
+         'abilities': list(dict.fromkeys(p['abilities'].values())),
+         'default_item': p.get('requiredItem') if p.get('forme', '').startswith('Mega') else None}
         for key, p in pokedex.items() if p.get('num', 0) > 0
     ]
+    for pokemon in choices['pokemon']:
+        pokemon['art_url'] = f"/api/teams/art/{pokemon['id']}" if artwork_path(pokemon) else None
     return choices
 
 

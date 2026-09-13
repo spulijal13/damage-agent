@@ -18,10 +18,11 @@ function art(container, pokemon) {
   const fallback = () => { container.innerHTML = '<span aria-hidden="true">◉</span><small>Artwork coming soon</small>'; };
   if (!pokemon) { fallback(); return; }
   const names = [...new Set([pokemon.id, pokemon.name, String(pokemon.num), String(pokemon.num).padStart(3,'0')])];
+  const urls = [pokemon.art_url, ...names.map(name => `/public/pokemon/${encodeURIComponent(name)}.png`)].filter(Boolean);
   let index = 0;
   const img = new Image();
   img.alt = pokemon.name;
-  img.onerror = () => { if (index < names.length) img.src = `/public/pokemon/${encodeURIComponent(names[index++])}.png`; else fallback(); };
+  img.onerror = () => { if (index < urls.length) img.src = urls[index++]; else fallback(); };
   container.append(img);
   img.onerror();
 }
@@ -74,6 +75,7 @@ function render() {
 }
 function openEditor(member = null) {
   editing = member?.pokemon_id ?? null;
+  closeTeamDropdowns();
   $('pokemon-form').reset();
   $('editor-title').textContent = editing ? 'Edit Pokémon' : 'Add Pokémon';
   $('species').value = member?.name ?? '';
@@ -95,7 +97,7 @@ function setSpecies(member = null) {
   art($('art'), species);
   $('ability').innerHTML = species.abilities.map(a=>`<option>${escapeHTML(a)}</option>`).join('');
   if (member) $('ability').value = member.ability;
-  $('item').value = member?.item ?? '';
+  $('item').value = member ? (member.item ?? '') : (species.default_item ?? '');
   $('nature').value = member?.nature ?? 'Serious';
   $('stats').innerHTML = '<div class="stat stat-head"><span>STAT</span><span>BASE</span><span>INVESTMENT</span><span>POINTS</span><span>LV 50</span></div>' + stats.map(s=>`<div class="stat"><label for="${s}-slider">${labels[s]}</label><span class="muted">${species.base_stats[s]}</span><input type="range" id="${s}-slider" min="0" max="32" value="${member?.[`${s}_points`] ?? 0}" aria-label="${labels[s]} points slider"><input type="number" id="${s}-points" min="0" max="32" step="1" required value="${member?.[`${s}_points`] ?? 0}" aria-label="${labels[s]} points"><output id="${s}-total"></output></div>`).join('');
   stats.forEach(s => {
@@ -108,16 +110,29 @@ function setSpecies(member = null) {
     };
   });
   [1,2,3,4].forEach(i=>$(`move-${i}`).value=member?.[`move_${i}`] ?? '');
+  syncTeamDropdowns();
   updateStats();
 }
 function updateStats() {
   if (!species) return;
   const nature = catalog.natures.find(n=>n.name===$('nature').value);
+  const aligned = nature.plus !== nature.minus;
+  $('nature-effect').textContent = aligned
+    ? `${nature.name}: +10% ${labels[nature.plus]}, −10% ${labels[nature.minus]}. Applied to the level-50 stats below.`
+    : `${nature.name}: neutral alignment. No stat increases or reductions.`;
   let total = 0;
   stats.forEach(s=>{
     const points = Number($(`${s}-points`).value); total += points;
     const value = level50Stat(species.base_stats[s], s, points, nature);
-    $(`${s}-total`).textContent = value;
+    const direction = aligned && s === nature.plus ? 1 : aligned && s === nature.minus ? -1 : 0;
+    const output = $(`${s}-total`);
+    output.textContent = value;
+    const row = output.closest('.stat');
+    row.classList.toggle('nature-up', direction === 1);
+    row.classList.toggle('nature-down', direction === -1);
+    row.querySelector('label').textContent = labels[s] + (direction === 1 ? ' ↑' : direction === -1 ? ' ↓' : '');
+    output.setAttribute('aria-label', `${labels[s]} ${value}${direction === 1 ? ', nature boosted' : direction === -1 ? ', nature reduced' : ''}`);
+    output.title = direction ? `${nature.name}: ${direction === 1 ? '+10%' : '−10%'} ${labels[s]}` : 'No nature modifier';
   });
   $('budget').textContent = `${total} / 66 · ${66-total} left`;
 }
@@ -160,6 +175,7 @@ async function init() {
     for (const [id, values] of [['item-options',catalog.items],['move-options',catalog.moves]]) $(id).innerHTML=values.map(v=>`<option value="${escapeHTML(v)}"></option>`).join('');
     $('nature').innerHTML = catalog.natures.map(n=>`<option value="${escapeHTML(n.name)}">${escapeHTML(n.name)}${n.plus!==n.minus ? ` (+${labels[n.plus]}, −${labels[n.minus]})` : ' (neutral)'}</option>`).join('');
     $('moves').innerHTML = [1,2,3,4].map(i=>`<div><label for="move-${i}">Move ${i}</label><input id="move-${i}" list="move-options" placeholder="Select a move" autocomplete="off"></div>`).join('');
+    document.querySelectorAll('#pokemon-form input[list], #pokemon-form select').forEach(createTeamDropdown);
     await refresh();
     $('create-team').querySelector('button').disabled = false;
   } catch(e) { notify(`Could not load your team library. ${e.message} Reload to retry.`); }

@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Team builder</title><link rel="stylesheet" href="/public/teams.css"><script src="/public/team-stats.js" defer></script><script src="/public/teams.js" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Team builder</title><link rel="stylesheet" href="/public/teams.css"><script src="/public/team-stats.js" defer></script><script src="/public/team-dropdowns.js" defer></script><script src="/public/teams.js" defer></script></head>
 <body>
 <header><div><span class="eyebrow">BATTLE WORKSPACE / 01</span><h1>Your teams<span class="dot">.</span></h1><p>Build your roster. Find your balance.</p></div><span class="badge">LEVEL 50 · CHAMPIONS POINTS</span></header>
 <div id="notice" role="status" aria-live="polite"></div>
@@ -12,7 +12,7 @@
 <label for="species">Pokémon</label><input id="species" list="pokemon-options" placeholder="Search by Pokémon name…" autocomplete="off" required><datalist id="pokemon-options"></datalist>
 <div id="pokemon-details" hidden>
 <div class="identity"><div id="art" class="art"></div><div><h3 id="species-title"></h3><div id="types"></div><p class="muted" id="dex-number"></p></div></div>
-<div class="fields"><div><label for="ability">Ability</label><select id="ability" required></select></div><div><label for="item">Held item</label><input id="item" list="item-options" placeholder="No item" autocomplete="off"><datalist id="item-options"></datalist></div><div class="full"><label for="nature">Stat alignment / nature</label><select id="nature"></select></div></div>
+<div class="fields"><div><label for="ability">Ability</label><select id="ability" required></select></div><div><label for="item">Held item</label><input id="item" list="item-options" placeholder="No item" autocomplete="off"><datalist id="item-options"></datalist></div><div class="full"><label for="nature">Stat alignment / nature</label><select id="nature"></select><p id="nature-effect" class="muted" aria-live="polite"></p></div></div>
 <div class="section-title"><h3>Stat investment</h3><strong id="budget">0 / 66</strong></div><p class="muted">0–32 points per stat · 31 IVs · Level 50</p><div id="stats"></div>
 <h3>Moves</h3><p class="muted">Choose up to four. Species learnsets are not checked in this iteration.</p><div class="fields" id="moves"></div><datalist id="move-options"></datalist>
 </div><p id="editor-error" role="alert"></p><footer><span id="save-hint" class="muted">Select a Pokémon to begin.</span><button id="save-pokemon" class="primary" type="submit" disabled>Save Pokémon</button></footer></form></dialog>

@@ -16,6 +16,7 @@ COPY frontend/ frontend/
 COPY calculator/ calculator/
 COPY data/ data/
 COPY public/ public/
+COPY Sugimori_Art/ Sugimori_Art/
 COPY .chainlit/config.toml .chainlit/config.toml
 COPY chainlit_app.py chainlit.md ./
 

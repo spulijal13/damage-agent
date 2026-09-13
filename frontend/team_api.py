@@ -2,6 +2,8 @@
 from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
+from fastapi.responses import FileResponse
+from damage_agent.artwork import artwork_path
 from damage_agent import teams
 
 
@@ -22,6 +24,15 @@ def call(fn, *args):
         raise HTTPException(422, str(exc)) from exc
     except LookupError as exc:
         raise HTTPException(404, str(exc)) from exc
+
+
+@router.get('/art/{pokemon_id}')
+def get_art(pokemon_id: str):
+    pokemon = next((p for p in teams.catalog()['pokemon'] if p['id'] == pokemon_id), None)
+    path = artwork_path(pokemon) if pokemon else None
+    if not path or not path.is_file():
+        raise HTTPException(404, 'Artwork not found.')
+    return FileResponse(path, media_type='image/png', headers={'Cache-Control': 'public, max-age=86400'})
 
 
 @router.get('/catalog')
