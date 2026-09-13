@@ -14,6 +14,7 @@ description = "Pokémon Champions damage calculator"
 default_theme = "dark"
 cot = "hidden"
 custom_css = "/public/chat.css"
+custom_js = "/public/navigation.js"
 
 [meta]
 generated_by = "2.12.0"

@@ -11,3 +11,9 @@ body {
 textarea { font-size: 1rem; }
 
 ::selection { background: #3b465b; color: #fff; }
+
+#workspace-tabs { position: fixed; top: 9px; left: 50%; transform: translateX(-50%); z-index: 100; display: flex; gap: 4px; background: #171a20; padding: 4px; border: 1px solid #333942; border-radius: 12px; white-space: nowrap; }
+#workspace-tabs button { font: inherit; font-size: 13px; color: #b5bfcd; border: 0; border-radius: 8px; padding: 8px 14px; background: transparent; cursor: pointer; }
+#workspace-tabs button[aria-pressed="true"] { background: #343b45; color: white; }
+#team-builder-panel { position: fixed; inset: 60px 0 0; width: 100%; height: calc(100dvh - 60px); border: 0; z-index: 90; background: #101215; }
+@media(max-width: 600px) { #workspace-tabs { top: 60px; } #team-builder-panel { top: 112px; height: calc(100dvh - 112px); } }

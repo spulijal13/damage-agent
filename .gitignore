@@ -4,3 +4,6 @@ node_modules/
 .venv/
 .env
 .DS_Store
+storage/
+*.sqlite3
+*.sqlite3-*

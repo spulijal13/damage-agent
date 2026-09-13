@@ -19,7 +19,7 @@ COPY public/ public/
 COPY .chainlit/config.toml .chainlit/config.toml
 COPY chainlit_app.py chainlit.md ./
 
-RUN useradd --create-home appuser && chown -R appuser:appuser /app
+RUN mkdir -p /app/storage && useradd --create-home appuser && chown -R appuser:appuser /app
 USER appuser
 EXPOSE 10000
 CMD ["sh", "-c", "exec chainlit run chainlit_app.py --headless --host 0.0.0.0 --port ${PORT:-10000}"]
