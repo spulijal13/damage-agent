@@ -28,12 +28,33 @@ function createTeamDropdown(control) {
   list.setAttribute('aria-label', document.querySelector(`label[for="${input.id}"]`)?.textContent || 'Options');
   list.hidden = true;
   wrapper.append(list);
+  // A popover joins the browser's top layer, escaping the dialog's overflow.
+  const floating = control.id === 'species' && typeof list.showPopover === 'function';
+  if (floating) list.setAttribute('popover', 'manual');
+  function positionList() {
+    if (!floating || list.hidden) return;
+    const rect = input.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const below = viewportHeight - rect.bottom - 13;
+    const above = rect.top - 13;
+    const openAbove = below < 180 && above > below;
+    list.style.width = `${Math.min(rect.width, window.innerWidth - 16)}px`;
+    list.style.left = `${Math.max(8, Math.min(rect.left, window.innerWidth - rect.width - 8))}px`;
+    list.style.maxHeight = `${Math.max(0, Math.min(360, openAbove ? above : below))}px`;
+    list.style.top = openAbove ? 'auto' : `${rect.bottom + 5}px`;
+    list.style.bottom = openAbove ? `${viewportHeight - rect.top + 5}px` : 'auto';
+  }
+  if (floating) {
+    window.addEventListener('resize', positionList);
+    document.addEventListener('scroll', positionList, true);
+  }
   input.setAttribute('aria-controls', list.id);
   let matches = [], active = -1;
   const sync = () => {
     if (isSelect) input.value = control.selectedOptions[0]?.textContent || '';
   };
   const close = () => {
+    if (floating && list.matches(':popover-open')) list.hidePopover();
     list.hidden = true;
     input.setAttribute('aria-expanded', 'false');
     input.removeAttribute('aria-activedescendant');
@@ -91,8 +112,11 @@ function createTeamDropdown(control) {
       list.append(empty);
     }
     list.hidden = false;
+    if (floating && !list.matches(':popover-open')) list.showPopover();
+    positionList();
     input.setAttribute('aria-expanded', 'true');
   }
+  if (floating) control.closest('dialog')?.addEventListener('close', close);
   input.addEventListener('focus', () => show());
   input.addEventListener('click', () => { if (list.hidden) show(); });
   input.addEventListener('input', () => show(input.value));

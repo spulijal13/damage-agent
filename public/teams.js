@@ -53,13 +53,10 @@ function render() {
     const name = $('team-name').value;
     try { await api(`/${team.team_id}`, 'PUT', {team_name:name}); await refresh(); notify('Team renamed.'); } catch(e) { notify(e.message); }
   };
-  $('delete-team').onclick = async () => {
-    if (!confirm(`Delete “${team.team_name}” and all its Pokémon?`)) return;
-    try { await api(`/${team.team_id}`, 'DELETE'); await refresh(); notify('Team deleted.'); } catch(e) { notify(e.message); }
-  };
+  $('delete-team').onclick = () => openDeleteConfirmation(team);
   team.pokemon.forEach(member => {
     const card = document.createElement('article'); card.className = 'card';
-    card.innerHTML = `<div class="art"></div><h3>${escapeHTML(member.name)}</h3><div>${[member.type_1, member.type_2].filter(Boolean).map(t=>`<span class="type">${escapeHTML(t)}</span>`).join('')}</div><p>${escapeHTML(member.ability)}<br>${escapeHTML(member.item || 'No held item')}</p><p class="muted">${escapeHTML(member.nature)} · ${stats.reduce((n,s)=>n+member[`${s}_points`],0)} / 66 points<br>${[1,2,3,4].map(i=>member[`move_${i}`]).filter(Boolean).map(escapeHTML).join(' · ') || 'Moves not selected'}</p><div class="card-actions"><button type="button">Edit Pokémon</button><button type="button">Remove</button></div>`;
+    card.innerHTML = `<div class="art"></div><h3>${escapeHTML(member.name)}</h3><div>${[member.type_1, member.type_2].filter(Boolean).map(t=>`<span class="type" data-type="${escapeHTML(t)}">${escapeHTML(t)}</span>`).join('')}</div><p>${escapeHTML(member.ability)}<br>${escapeHTML(member.item || 'No held item')}</p><p class="muted">${escapeHTML(member.nature)} · ${stats.reduce((n,s)=>n+member[`${s}_points`],0)} / 66 points<br>${[1,2,3,4].map(i=>member[`move_${i}`]).filter(Boolean).map(escapeHTML).join(' · ') || 'Moves not selected'}</p><div class="card-actions"><button type="button">Edit Pokémon</button><button type="button">Remove</button></div>`;
     art(card.querySelector('.art'), catalog.pokemon.find(p=>p.name===member.name));
     const [edit, remove] = card.querySelectorAll('button');
     edit.onclick = () => openEditor(member);
@@ -73,6 +70,38 @@ function render() {
     const add = document.createElement('button'); add.className = 'add-card'; add.textContent = '＋ Add Pokémon'; add.onclick = () => openEditor(); $('roster').append(add);
   }
 }
+let deletingTeam = null, deletePending = false;
+function openDeleteConfirmation(team) {
+  deletingTeam = team.team_id;
+  $('delete-description').textContent = `“${team.team_name}” and all ${team.pokemon.length} of its Pokémon will be permanently deleted. This cannot be undone.`;
+  $('delete-error').textContent = '';
+  $('delete-confirmation').showModal();
+  $('cancel-delete').focus();
+}
+$('cancel-delete').onclick = () => { if (!deletePending) $('delete-confirmation').close(); };
+$('delete-confirmation').addEventListener('cancel', event => { if (deletePending) event.preventDefault(); });
+$('delete-confirmation').addEventListener('close', () => { deletingTeam = null; });
+$('confirm-delete').onclick = async () => {
+  if (deletePending || deletingTeam === null) return;
+  deletePending = true;
+  $('confirm-delete').disabled = $('cancel-delete').disabled = true;
+  $('confirm-delete').textContent = 'Deleting…';
+  $('delete-error').textContent = '';
+  try {
+    await api(`/${deletingTeam}`, 'DELETE');
+    $('delete-confirmation').close();
+    await refresh();
+    notify('Team deleted.');
+    ($('team-name') || $('new-name')).focus();
+  } catch (error) {
+    if ($('delete-confirmation').open) $('delete-error').textContent = error.message;
+    else notify(`Team deleted, but the list could not refresh. Reload the page. ${error.message}`);
+  } finally {
+    deletePending = false;
+    $('confirm-delete').disabled = $('cancel-delete').disabled = false;
+    $('confirm-delete').textContent = 'Delete team';
+  }
+};
 function openEditor(member = null) {
   editing = member?.pokemon_id ?? null;
   closeTeamDropdowns();
@@ -92,8 +121,8 @@ function setSpecies(member = null) {
   $('save-hint').textContent = species ? 'Changes are saved when you click Save.' : 'Select a Pokémon to begin.';
   if (!species) return;
   $('species-title').textContent = species.name;
-  $('dex-number').textContent = `Pokédex #${species.num}`;
-  $('types').innerHTML = species.types.map(t=>`<span class="type">${escapeHTML(t)}</span>`).join('');
+  $('dex-number').textContent = `#${species.num} • ${species.height_m != null ? species.height_m + ' m' : 'Height unknown'} • ${species.weight_kg != null ? species.weight_kg + ' kg' : 'Weight unknown'}`;
+  $('types').innerHTML = species.types.map(t=>`<span class="type" data-type="${escapeHTML(t)}">${escapeHTML(t)}</span>`).join('');
   art($('art'), species);
   $('ability').innerHTML = species.abilities.map(a=>`<option>${escapeHTML(a)}</option>`).join('');
   if (member) $('ability').value = member.ability;
@@ -113,6 +142,18 @@ function setSpecies(member = null) {
   updateMoveDetails();
   syncTeamDropdowns();
   updateStats();
+}
+function applyMegaStone() {
+  if (!species) return;
+  const item = $('item').value.trim().toLowerCase();
+  const mega = catalog.pokemon.find(p => p.num === species.num && p.default_item && p.default_item.toLowerCase() === item);
+  if (!mega || mega.name === species.name) return;
+  const preserved = {ability: mega.abilities[0], item: mega.default_item, nature: $('nature').value};
+  stats.forEach(s => preserved[`${s}_points`] = Number($(`${s}-points`).value));
+  [1,2,3,4].forEach(i => preserved[`move_${i}`] = $(`move-${i}`).value);
+  $('species').value = mega.name;
+  setSpecies(preserved);
+  dirty = true;
 }
 function moveDetails(name) {
   return catalog.move_details[name.toLowerCase().replace(/[^a-z0-9]/g, '')];
@@ -175,6 +216,8 @@ $('pokemon-form').addEventListener('input', ()=>{dirty=true;});
 $('species').oninput = () => setSpecies();
 $('nature').onchange = updateStats;
 $('ability').onchange = updateMoveDetails;
+$('item').addEventListener('input', applyMegaStone);
+$('item').addEventListener('change', applyMegaStone);
 $('pokemon-form').onsubmit = async event => {
   event.preventDefault();
   if (!species || saving) return;

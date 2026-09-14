@@ -28,6 +28,7 @@ def catalog():
     choices['pokemon'] = [
         {'name': p['name'], 'id': key, 'num': p['num'],
          'types': p['types'], 'base_stats': p['baseStats'],
+         'height_m': p.get('heightm'), 'weight_kg': p.get('weightkg'),
          'abilities': list(dict.fromkeys(p['abilities'].values())),
          'default_item': p.get('requiredItem') if p.get('forme', '').startswith('Mega') else None}
         for key, p in pokedex.items() if p.get('num', 0) > 0

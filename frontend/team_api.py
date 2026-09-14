@@ -93,6 +93,10 @@ def delete_pokemon(team_id: int, pokemon_id: int):
 
 def register_routes():
     from chainlit.server import app
+    from frontend.cache_policy import FrontendCachePolicy
+    if not getattr(app.state, 'frontend_cache_policy_installed', False):
+        app.add_middleware(FrontendCachePolicy)
+        app.state.frontend_cache_policy_installed = True
     # Re-importing the Chainlit entry point during development must not duplicate routes.
     app.router.routes[:] = [route for route in app.router.routes
                             if not getattr(route, 'path', '').startswith('/api/teams')]

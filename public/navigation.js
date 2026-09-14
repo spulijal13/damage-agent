@@ -16,6 +16,6 @@
     // Keep the mounted chat and team editor alive when switching tabs.
     const chat = document.getElementById('root');
     if (chat) chat.inert = index === 1;
-    if (index === 1 && !panel.getAttribute('src')) panel.src = '/public/teams.html';
+    if (index === 1 && !panel.getAttribute('src')) panel.src = '/public/teams.html?v=20260914';
   }));
 })();

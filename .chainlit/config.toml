@@ -13,8 +13,8 @@ name = "Damage Agent"
 description = "Pokémon Champions damage calculator"
 default_theme = "dark"
 cot = "hidden"
-custom_css = "/public/chat.css"
-custom_js = "/public/navigation.js"
+custom_css = "/public/chat.css?v=20260914"
+custom_js = "/public/navigation.js?v=20260914"
 
 [meta]
 generated_by = "2.12.0"
