@@ -86,3 +86,9 @@ button.danger:hover { background:#ce2d3e; border-color:#ed6372; }
 #discard-confirmation { width:min(460px,95vw); }
 #discard-confirmation footer { justify-content:flex-end; flex-wrap:wrap; }
 #discard-confirmation footer button { min-width:135px; min-height:40px; }
+
+.roster { grid-template-columns:repeat(3,minmax(0,1fr)); }
+.roster .card { min-width:0; overflow-wrap:anywhere; }
+.roster .card-actions { flex-wrap:wrap; }
+@media(max-width:750px) { .roster { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:480px) { .roster { grid-template-columns:1fr; } }
