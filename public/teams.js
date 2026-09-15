@@ -1,6 +1,6 @@
 'use strict';
 const $ = id => document.getElementById(id);
-const stats = ['hp', 'atk', 'spa', 'def', 'spd', 'spe'];
+const stats = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
 const labels = {hp:'HP', atk:'Atk', spa:'SpA', def:'Def', spd:'SpD', spe:'Spe'};
 let catalog, teams = [], selected = null, editing = null, species = null, dirty = false, saving = false;
 const escapeHTML = text => String(text ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
