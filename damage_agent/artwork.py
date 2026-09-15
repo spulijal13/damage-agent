@@ -1,4 +1,6 @@
 """Match supplied Sugimori artwork by Pokédex number and canonical form name."""
+from damage_agent.pokemon_labels import gendered_name
+
 import re
 import unicodedata
 from functools import lru_cache
@@ -40,13 +42,22 @@ def artwork_path(pokemon):
         'Urshifu-Gmax': 'Urshifu Gigantamax Single Strike',
         'Urshifu-Rapid-Strike-Gmax': 'Urshifu Gigantamax Rapid Strike',
     }
-    candidates = [name, aliases.get(name, name)]
+    gender_name = gendered_name(name)
+    if gender_name:
+        candidates = [gender_name, re.sub(r'-M(?=-|$)', ' Male', re.sub(r'-F(?=-|$)', ' Female', gender_name))]
+        # Nidoran's numbered artwork omits the gender suffix; its numbers differ.
+        if name.startswith('Nidoran-'):
+            candidates.append('Nidoran')
+    else:
+        candidates = [name, aliases.get(name, name)]
     if name.startswith('Ogerpon-'):
         candidates.append(name + ' Mask')
     for candidate in candidates:
         path = artwork_index().get((pokemon['num'], normalized(candidate)))
         if path:
             return path
+    if gender_name:
+        return None  # Never substitute generic/opposite-gender artwork.
     # Names can differ between the Pokédex and the artwork collection. Prefer
     # the main species illustration (shallower directory), never another number.
     same_number = [path for (number, _), path in artwork_index().items()

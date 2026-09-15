@@ -82,3 +82,7 @@ button.danger:hover { background:#ce2d3e; border-color:#ed6372; }
 .type[data-type="Dark"] { --type-color:#5a5465; }
 .type[data-type="Steel"] { --type-color:#5a8ea2; }
 .type[data-type="Fairy"] { --type-color:#ec8fe6; color:#32132f; text-shadow:none; }
+
+#discard-confirmation { width:min(460px,95vw); }
+#discard-confirmation footer { justify-content:flex-end; flex-wrap:wrap; }
+#discard-confirmation footer button { min-width:135px; min-height:40px; }

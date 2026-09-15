@@ -12,16 +12,17 @@ async function api(path = '', method = 'GET', data) {
   }
   return response.json();
 }
+function pokemonLabel(name) { return catalog.pokemon.find(p => p.name === name)?.display_name || name; }
 function notify(message) { $('notice').textContent = message; }
 function art(container, pokemon) {
   container.replaceChildren();
   const fallback = () => { container.innerHTML = '<span aria-hidden="true">◉</span><small>Artwork coming soon</small>'; };
   if (!pokemon) { fallback(); return; }
-  const names = [...new Set([pokemon.id, pokemon.name, String(pokemon.num), String(pokemon.num).padStart(3,'0')])];
+  const names = pokemon.gendered_name ? [pokemon.gendered_name.toLowerCase(), pokemon.gendered_name] : [...new Set([pokemon.id, pokemon.name, String(pokemon.num), String(pokemon.num).padStart(3,'0')])];
   const urls = [pokemon.art_url, ...names.map(name => `/public/pokemon/${encodeURIComponent(name)}.png`)].filter(Boolean);
   let index = 0;
   const img = new Image();
-  img.alt = pokemon.name;
+  img.alt = pokemon.display_name || pokemon.name;
   img.onerror = () => { if (index < urls.length) img.src = urls[index++]; else fallback(); };
   container.append(img);
   img.onerror();
@@ -56,12 +57,12 @@ function render() {
   $('delete-team').onclick = () => openDeleteConfirmation(team);
   team.pokemon.forEach(member => {
     const card = document.createElement('article'); card.className = 'card';
-    card.innerHTML = `<div class="art"></div><h3>${escapeHTML(member.name)}</h3><div>${[member.type_1, member.type_2].filter(Boolean).map(t=>`<span class="type" data-type="${escapeHTML(t)}">${escapeHTML(t)}</span>`).join('')}</div><p>${escapeHTML(member.ability)}<br>${escapeHTML(member.item || 'No held item')}</p><p class="muted">${escapeHTML(member.nature)} · ${stats.reduce((n,s)=>n+member[`${s}_points`],0)} / 66 points<br>${[1,2,3,4].map(i=>member[`move_${i}`]).filter(Boolean).map(escapeHTML).join(' · ') || 'Moves not selected'}</p><div class="card-actions"><button type="button">Edit Pokémon</button><button type="button">Remove</button></div>`;
+    card.innerHTML = `<div class="art"></div><h3>${escapeHTML(pokemonLabel(member.name))}</h3><div>${[member.type_1, member.type_2].filter(Boolean).map(t=>`<span class="type" data-type="${escapeHTML(t)}">${escapeHTML(t)}</span>`).join('')}</div><p>${escapeHTML(member.ability)}<br>${escapeHTML(member.item || 'No held item')}</p><p class="muted">${escapeHTML(member.nature)} · ${stats.reduce((n,s)=>n+member[`${s}_points`],0)} / 66 points<br>${[1,2,3,4].map(i=>member[`move_${i}`]).filter(Boolean).map(escapeHTML).join(' · ') || 'Moves not selected'}</p><div class="card-actions"><button type="button">Edit Pokémon</button><button type="button">Remove</button></div>`;
     art(card.querySelector('.art'), catalog.pokemon.find(p=>p.name===member.name));
     const [edit, remove] = card.querySelectorAll('button');
     edit.onclick = () => openEditor(member);
     remove.onclick = async () => {
-      if (!confirm(`Remove ${member.name} from this team?`)) return;
+      if (!confirm(`Remove ${pokemonLabel(member.name)} from this team?`)) return;
       try { await api(`/${team.team_id}/pokemon/${member.pokemon_id}`, 'DELETE'); await refresh(); notify('Pokémon removed.'); } catch(e) { notify(e.message); }
     };
     $('roster').append(card);
@@ -107,20 +108,23 @@ function openEditor(member = null) {
   closeTeamDropdowns();
   $('pokemon-form').reset();
   $('editor-title').textContent = editing ? 'Edit Pokémon' : 'Add Pokémon';
-  $('species').value = member?.name ?? '';
+  $('species').value = member ? pokemonLabel(member.name) : '';
   $('editor-error').textContent = '';
   setSpecies(member);
   dirty = false;
   $('editor').showModal();
-  $('species').focus();
+  // Keep search closed until the user focuses or clicks the Pokémon field.
+  $('editor-title').setAttribute('tabindex', '-1');
+  $('editor-title').focus();
+  closeTeamDropdowns();
 }
 function setSpecies(member = null) {
-  species = catalog.pokemon.find(p => p.name.toLowerCase() === $('species').value.trim().toLowerCase()) || null;
+  species = catalog.pokemon.find(p => [p.name, p.display_name].some(name => name.toLowerCase() === $('species').value.trim().toLowerCase())) || null;
   $('pokemon-details').hidden = !species;
   $('save-pokemon').disabled = !species;
   $('save-hint').textContent = species ? 'Changes are saved when you click Save.' : 'Select a Pokémon to begin.';
   if (!species) return;
-  $('species-title').textContent = species.name;
+  $('species-title').textContent = species.display_name;
   $('dex-number').textContent = `#${species.num} • ${species.height_m != null ? species.height_m + ' m' : 'Height unknown'} • ${species.weight_kg != null ? species.weight_kg + ' kg' : 'Weight unknown'}`;
   $('types').innerHTML = species.types.map(t=>`<span class="type" data-type="${escapeHTML(t)}">${escapeHTML(t)}</span>`).join('');
   art($('art'), species);
@@ -138,7 +142,18 @@ function setSpecies(member = null) {
       dirty = true; updateStats();
     };
   });
-  [1,2,3,4].forEach(i=>$(`move-${i}`).value=member?.[`move_${i}`] ?? '');
+  const sortedMoves = [...species.moves].sort((a, b) =>
+    (moveDetails(a)?.type || '').localeCompare(moveDetails(b)?.type || '') || a.localeCompare(b));
+  $('move-options').innerHTML = sortedMoves.map(name => `<option value="${escapeHTML(name)}" data-type="${escapeHTML(moveDetails(name)?.type || '')}"></option>`).join('');
+  $('learnset-note').textContent = species.has_champions_learnset
+    ? `${species.moves.length} moves in ${species.display_name}’s Champions learnset. Choose up to four.`
+    : 'No Champions learnset is available. Showing all moves; Pokémon move legality is not checked.';
+  [1,2,3,4].forEach(i => {
+    const input = $(`move-${i}`);
+    input.value = member?.[`move_${i}`] ?? '';
+    input.disabled = false;
+    input.setCustomValidity(input.value && !species.moves.includes(input.value) ? 'Choose a move from this Pokémon’s available move list.' : '');
+  });
   updateMoveDetails();
   syncTeamDropdowns();
   updateStats();
@@ -151,7 +166,7 @@ function applyMegaStone() {
   const preserved = {ability: mega.abilities[0], item: mega.default_item, nature: $('nature').value};
   stats.forEach(s => preserved[`${s}_points`] = Number($(`${s}-points`).value));
   [1,2,3,4].forEach(i => preserved[`move_${i}`] = $(`move-${i}`).value);
-  $('species').value = mega.name;
+  $('species').value = mega.display_name;
   setSpecies(preserved);
   dirty = true;
 }
@@ -165,6 +180,7 @@ function updateMoveDetails() {
   [1,2,3,4].forEach(i => {
     const panel = $(`move-${i}-details`);
     const name = $(`move-${i}`).value.trim();
+    $(`move-${i}`).setCustomValidity(name && species && !species.moves.includes(name) ? 'Choose a move from this Pokémon’s available move list.' : '');
     const move = moveDetails(name);
     panel.hidden = !name;
     if (!move) {
@@ -207,8 +223,17 @@ function updateStats() {
 }
 function closeEditor() {
   if (saving) return;
-  if (!dirty || confirm('Discard unsaved Pokémon changes?')) $('editor').close();
+  if (!dirty) { $('editor').close(); return; }
+  closeTeamDropdowns();
+  if (!$('discard-confirmation').open) $('discard-confirmation').showModal();
+  $('keep-editing').focus();
 }
+$('keep-editing').onclick = () => $('discard-confirmation').close();
+$('confirm-discard').onclick = () => {
+  dirty = false;
+  $('discard-confirmation').close();
+  $('editor').close();
+};
 $('close-editor').onclick = closeEditor;
 $('editor').addEventListener('cancel', e=>{e.preventDefault(); closeEditor();});
 window.addEventListener('beforeunload', e=>{if(dirty && $('editor').open){e.preventDefault(); e.returnValue='';}});
@@ -243,7 +268,7 @@ async function init() {
   $('create-team').querySelector('button').disabled = true;
   try {
     catalog = await api('/catalog');
-    $('pokemon-options').innerHTML = catalog.pokemon.map(p=>`<option value="${escapeHTML(p.name)}"></option>`).join('');
+    $('pokemon-options').innerHTML = catalog.pokemon.map(p=>`<option value="${escapeHTML(p.display_name)}"></option>`).join('');
     for (const [id, values] of [['item-options',catalog.items],['move-options',catalog.moves]]) $(id).innerHTML=values.map(v=>`<option value="${escapeHTML(v)}"></option>`).join('');
     $('nature').innerHTML = catalog.natures.map(n=>`<option value="${escapeHTML(n.name)}">${escapeHTML(n.name)}${n.plus!==n.minus ? ` (+${labels[n.plus]}, −${labels[n.minus]})` : ' (neutral)'}</option>`).join('');
     $('moves').innerHTML = [1,2,3,4].map(i=>`<div><label for="move-${i}">Move ${i}</label><input id="move-${i}" list="move-options" placeholder="Select a move" autocomplete="off"><div id="move-${i}-details" class="move-details" aria-live="polite" hidden></div></div>`).join('');

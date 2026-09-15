@@ -1,5 +1,6 @@
 """Persistent shared team library. Stat investments are Champions points, not EVs."""
 from damage_agent.artwork import artwork_path
+from damage_agent.pokemon_labels import display_name, gendered_name
 
 import json
 import os
@@ -14,7 +15,7 @@ STATS = ('hp', 'atk', 'spa', 'def', 'spd', 'spe')
 
 
 @lru_cache(maxsize=1)
-def catalog():
+def _static_catalog():
     pokedex = json.loads((ROOT / 'data/pokedex.json').read_text())
     choices = json.loads(subprocess.run(
         ['node', str(ROOT / 'calculator/team_catalog.js')],
@@ -26,15 +27,46 @@ def catalog():
                for key, p in pokedex.items()}
     choices['move_details'] = json.loads((ROOT / 'data/moves.json').read_text())
     choices['pokemon'] = [
-        {'name': p['name'], 'id': key, 'num': p['num'],
+        {'name': p['name'], 'display_name': display_name(p['name']),
+         'gendered_name': gendered_name(p['name']), 'id': key, 'num': p['num'],
          'types': p['types'], 'base_stats': p['baseStats'],
          'height_m': p.get('heightm'), 'weight_kg': p.get('weightkg'),
          'abilities': list(dict.fromkeys(p['abilities'].values())),
          'default_item': p.get('requiredItem') if p.get('forme', '').startswith('Mega') else None}
         for key, p in pokedex.items() if p.get('num', 0) > 0
     ]
+    learnsets = json.loads((ROOT / 'data/champions_learnsets.json').read_text())
+    move_names = {name.lower().replace(' ', '').replace('-', '').replace("'", ''): name for name in choices['moves']}
     for pokemon in choices['pokemon']:
+        entry = pokedex[pokemon['id']]
+        source_id = pokemon['id']
+        # Mega and cosmetic forms share their base species' learnset. Never use
+        # a generic generation-9 learnset for a species absent from this snapshot.
+        if source_id not in learnsets and (entry.get('forme', '').startswith('Mega') or entry.get('isCosmeticForme')):
+            base = entry.get('baseSpecies', '')
+            source_id = next((key for key, value in pokedex.items() if value['name'] == base), source_id)
+        pokemon['learnset_id'] = source_id
+        pokemon['moves'] = sorted(move_names[m] for m in learnsets.get(source_id, []) if m in move_names)
+        pokemon['has_champions_learnset'] = source_id in learnsets
         pokemon['art_url'] = f"/api/teams/art/{pokemon['id']}" if artwork_path(pokemon) else None
+    return choices
+
+
+def catalog():
+    from damage_agent.champions_learnsets import get_learnsets
+    snapshot = get_learnsets()
+    choices = dict(_static_catalog())
+    choices['learnset_source'] = snapshot['source']
+    names = {''.join(c for c in name.lower() if c.isalnum()): name for name in choices['moves']}
+    choices['pokemon'] = []
+    for original in _static_catalog()['pokemon']:
+        pokemon = dict(original)
+        source = pokemon['learnset_id']
+        learnset = snapshot['learnsets'].get(source)
+        pokemon['has_champions_learnset'] = learnset is not None
+        pokemon['moves'] = (sorted(names[m] for m in learnset if m in names)
+                            if learnset is not None else list(choices['moves']))
+        choices['pokemon'].append(pokemon)
     return choices
 
 
@@ -142,6 +174,8 @@ def validate_member(data):
     if any(m is not None and (not isinstance(m, str) or m not in choices['moves']) for m in moves):
         raise ValueError('Select moves from the catalog.')
     nonempty = [m for m in moves if m]
+    if any(m not in species['moves'] for m in nonempty):
+        raise ValueError('Choose moves from this Pokémon’s available move list.')
     if len(nonempty) != len(set(nonempty)):
         raise ValueError('Choose different moves in each slot.')
     return [species['name'], species['num'], ability, item,

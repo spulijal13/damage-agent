@@ -180,3 +180,12 @@ accuracy, priority, and short description, with an expandable full description.
 Details are served from the bundled Showdown snapshot `data/moves.json`; see
 `data/moves-source.md` for provenance. No live request is made when selecting moves.
 Type PNGs are served from `images/type_icons/` and also appear in move suggestions.
+
+Champions learnsets are read from `data/champions_learnsets.json`. There is no
+startup fetch or timed refresh. To deliberately download, validate, and atomically
+replace this file, run `python -m damage_agent.champions_learnsets`. Failed updates
+preserve the previous file. The future admin panel can call `refresh_learnsets()`;
+no public update endpoint is exposed. Newly loaded catalogs use the updated file;
+refresh an already-open team builder to see it. For updates made locally, commit
+and deploy the changed JSON to keep it across Render deployments. Updating the
+file on free Render only changes that running instance's ephemeral filesystem.
