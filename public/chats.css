@@ -45,6 +45,11 @@ h1 { display: flex; font-size: 22px; font-weight: 600; letter-spacing: -.6px; ma
 .message { margin: 0 0 28px; }
 .message-label { color: #aab0ba; font-size: 11px; text-transform: uppercase; letter-spacing: .1em; margin-bottom: 10px; }
 .message-content { font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; }
+.message-table { overflow-x: auto; margin: 16px 0; border: 1px solid var(--line); border-radius: 8px; white-space: normal; }
+.message-table table { width: 100%; min-width: 520px; border-collapse: collapse; font-size: 12px; font-variant-numeric: tabular-nums; }
+.message-table th, .message-table td { padding: 9px 12px; text-align: left; border-bottom: 1px solid var(--line); }
+.message-table th { background: #20252c; color: #edf0f4; }
+.message-table tr:last-child td { border-bottom: 0; }
 .message.user { margin-left: 10%; padding: 16px 20px; border: 1px solid var(--line); border-radius: 12px; background: #171b20; }
 .message.pending { color: #9eaabc; }
 #composer { padding: 16px 28px 12px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; border-top: 1px solid #2b3038; }

@@ -35,8 +35,14 @@ The catalog is cached per process: update the Pokédex and restart the CLI to re
 it. Only names are sent to Gemini, not the full stats/abilities dataset; this adds
 prompt tokens to each request. No separate generated data file needs maintaining.
 
-The battle builder defaults to generation 9, level 50, 31 IVs, zero EVs, and a neutral
-nature. Gemini interprets numeric stat investments as Champions points; Python converts them:
+The battle builder defaults to generation 9, level 50, 31 IVs, and a Serious (neutral)
+nature for both Pokémon, always displayed in the battle summary. The attacker defaults
+to 32 Champions points in Attack for physical moves or Special Attack for special
+moves, unless that stat was explicitly specified (including zero). Other unspecified
+stats, including the defender's, remain zero. Moves that use neither offensive stat
+(Body Press, Foul Play, fixed-damage and status moves) do not receive this default.
+Defaults are recalculated for the current move on follow-ups, while explicit
+investments and natures persist. Gemini interprets numeric stat investments as Champions points; Python converts them:
 zero maps to zero EVs; positive points map to `8 * points - 4`. Python caps points at 32 per stat. The 66-point total budget is not currently
 validated. All CLI investments use Champions points, even when called EVs:
 "32 HP EVs" means 32 Champions points (252 calculator EVs). The summary and
@@ -61,9 +67,47 @@ you can inspect assumptions. Natural-language parsing can still make mistakes.
 | `data/pokedex.json` | Source for parser name catalog; damage data comes from Smogon |
 | `legacy/paths.py` | Legacy data paths, including files absent from this checkout |
 
-Bulk optimization and multi-turn survival planning are unsupported in the CLI.
-Reconnecting them requires migrating the optimizer's calculator interface and
-checking sequence mechanics. Retained legacy files are not a supported API.
+The legacy attack-specific optimizer and multi-turn survival planning remain
+unsupported. Reconnecting them requires migrating the optimizer's calculator
+interface and checking sequence mechanics. Retained legacy files are not a supported API.
+
+## Weighted bulk optimization
+
+Chat and CLI support the stat-based objective:
+
+```text
+minimize (B / (base Def + 20 + y) + 1 / (base SpD + 20 + z)) / (base HP + 75 + x)
+subject to x + y + z = T, with integer x, y, z between 0 and 32.
+```
+
+`x`, `y`, and `z` are HP, Defense, and Special Defense Champions points.
+Supply a Pokémon and a total defensive budget `T` (0–66). `B` defaults to 1:
+larger values favor physical bulk; smaller values favor special bulk; zero
+optimizes special bulk alone. The formula assumes level 50, 31 IVs, and a neutral
+nature. Non-neutral natures and Shedinja's exceptional HP are rejected rather
+than silently calculated with the wrong formula. This score is not a guarantee
+of surviving any particular attack and does not model items, abilities, or field effects.
+
+Examples:
+
+- `Optimize Volcarona bulk with T=11 and B=1`
+- `Now use B=2`
+- `Show the optimal spreads for all B ranges`
+- `Use base HP 85, base Defense 75, base SpD 105, T=11, B=1 and show B ranges`
+
+The supplied reference uses Volcarona base Defense 75; the bundled Pokédex has
+65. With the reference's explicit base stats, the optimum at B=1 is 10 HP / 1 Def /
+0 SpD, giving 170 HP / 96 Def / 125 SpD. Its B interval is [0.9728, 1.020493...].
+With the bundled stats the optimum is 3 HP / 8 Def / 0 SpD. Every result displays
+its base stats and whether explicit overrides were used. Changing species clears
+old base-stat overrides; `use catalog base stats` also clears them.
+
+`damage_agent/battle_builder.py` performs the exhaustive integer search and
+computes B intervals from exact rational line intersections. Gemini only extracts
+the inputs. `damage_agent/agent.py` routes bulk requests and preserves their inputs
+for follow-ups independently of damage battle inputs. The chat renders B-range
+tables; tied optima at the requested B are reported, and table boundaries are
+rounded to four decimals.
 
 ## Checks
 

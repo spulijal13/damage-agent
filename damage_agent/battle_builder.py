@@ -1,8 +1,31 @@
-from damage_agent.pokemon_catalog import default_ability
+from damage_agent.pokemon_catalog import default_ability, base_stats
+from fractions import Fraction
+import math
+from functools import lru_cache
+from pathlib import Path
+import json
 
 STAT_KEYS = ("hp", "atk", "def", "spa", "spd", "spe")
 BOOST_KEYS = ("atk", "def", "spa", "spd", "spe")
 CHAMPIONS_MAX_POINTS_PER_STAT = 32
+
+
+@lru_cache(maxsize=1)
+def move_data():
+    return json.loads((Path(__file__).resolve().parents[1] / 'data/moves.json').read_text())
+
+
+def apply_offensive_default(attacker, slot, move_name):
+    """Default only the move's offensive investment; explicit zero stays zero."""
+    move_id = ''.join(c for c in str(move_name).lower() if c.isalnum())
+    move = move_data().get(move_id, {})
+    # These attacks do not use the user's Attack or Special Attack investment.
+    if move_id in ('bodypress', 'foulplay') or move.get('damage') or move.get('damageCallback'):
+        return
+    stat = {'Physical': 'atk', 'Special': 'spa'}.get(move.get('category'))
+    spread = slot.get('spread') or slot.get('evs') or {}
+    if stat and (not isinstance(spread, dict) or spread.get(stat) is None):
+        attacker['evs'][stat] = champions_points_to_evs(CHAMPIONS_MAX_POINTS_PER_STAT)
 
 def normalize_text(text):
     if text is None:
@@ -147,6 +170,7 @@ def validate_damage_slots(extraction):
 def build_battle(extraction):
     attacker = build_pokemon(extraction.get("attacker"))
     defender = build_pokemon(extraction.get("defender"))
+    apply_offensive_default(attacker, extraction.get('attacker') or {}, extraction.get('move'))
     return {
         "gen": extraction.get("gen") or 9,
         "attacker": attacker,
@@ -179,9 +203,9 @@ def format_battle_summary(battle):
             f"Ability: {pokemon.get('ability') or 'Default (calculator)'} | "
             f"Item: {pokemon.get('item') or 'None'}",
         ])
-        conditions = []
-        if pokemon.get("nature") and pokemon["nature"] != "Serious":
-            conditions.append(f"Nature: {pokemon['nature']}")
+        nature = pokemon.get('nature') or 'Serious'
+        neutral = ' (neutral)' if nature in ('Serious', 'Hardy', 'Docile', 'Bashful', 'Quirky') else ''
+        conditions = [f'Nature: {nature}{neutral}']
         if pokemon.get("status"):
             conditions.append(f"Status: {pokemon['status']}")
         boosts = " / ".join(
@@ -209,3 +233,194 @@ def format_battle_summary(battle):
     if field.get("critical"):
         lines.append("Critical hit: Yes")
     return "\n".join(lines)
+
+
+def optimize_bulk(name, total_points, bias=1, show_ranges=False, nature='Serious', stats_override=None):
+    """Exact integer search for (B / Def + 1 / SpD) / HP; lower is better."""
+    if type(total_points) is not int or not 0 <= total_points <= 66:
+        raise ValueError('T must be a whole number from 0 to 66 Champions points.')
+    if type(bias) not in (int, float) or not math.isfinite(bias) or bias < 0:
+        raise ValueError('B must be a finite, nonnegative number; B=1 weights both sides equally.')
+    if nature not in ('Serious', 'Hardy', 'Docile', 'Bashful', 'Quirky'):
+        raise ValueError('This formula assumes a neutral nature. Use a neutral nature for weighted bulk optimization.')
+    base = base_stats(name)
+    if stats_override:
+        if not isinstance(stats_override, dict) or any(
+            k not in ('hp', 'def', 'spd') or type(v) is not int or not 1 <= v <= 255
+            for k, v in stats_override.items()
+        ):
+            raise ValueError('Base HP, Defense and Sp. Defense overrides must be whole numbers from 1 to 255.')
+        base.update(stats_override)
+    if base['hp'] == 1:
+        raise ValueError('This HP formula does not apply to Shedinja, whose HP stays at 1.')
+    candidates = []
+    for x in range(min(32, total_points) + 1):
+        for y in range(min(32, total_points - x) + 1):
+            z = total_points - x - y
+            if not 0 <= z <= 32:
+                continue
+            hp, defense, spd = base['hp'] + 75 + x, base['def'] + 20 + y, base['spd'] + 20 + z
+            candidates.append({'points': [x, y, z], 'stats': [hp, defense, spd],
+                               'a': Fraction(1, hp * defense), 'c': Fraction(1, hp * spd)})
+    weight = Fraction(str(bias))
+    minimum = min(p['a'] * weight + p['c'] for p in candidates)
+    best = [p for p in candidates if p['a'] * weight + p['c'] == minimum]
+    result = {'name': name, 'total_points': total_points, 'bias': bias, 'nature': nature,
+              'base_stats': base, 'custom_base_stats': bool(stats_override), 'score': float(minimum),
+              'best': [{'points': p['points'], 'stats': p['stats']} for p in best]}
+    if show_ranges:
+        # Each spread is a line a*B+c. Build its lower envelope with exact
+        # rational crossings, avoiding a sampled B grid and rounding errors.
+        lines = {}
+        for p in candidates:
+            lines.setdefault((p['a'], p['c']), []).append(p)
+        hull = []
+        for (a, c), spreads in sorted(lines.items(), key=lambda pair: (-pair[0][0], pair[0][1])):
+            if hull and hull[-1]['a'] == a:
+                continue  # Same slope with a higher intercept is never optimal.
+            start = None
+            while hull:
+                previous = hull[-1]
+                start = (c - previous['c']) / (previous['a'] - a)
+                if previous['start'] is None or start > previous['start']:
+                    break
+                hull.pop()
+            hull.append({'a': a, 'c': c, 'spreads': spreads, 'start': start if hull else None})
+        ranges = []
+        for i, line in enumerate(hull):
+            low = max(Fraction(0), line['start'] or Fraction(0))
+            high = hull[i + 1]['start'] if i + 1 < len(hull) else None
+            if high is not None and high < low:
+                continue
+            for p in line['spreads']:
+                ranges.append({'points': p['points'], 'stats': p['stats'],
+                               'low': float(low), 'high': float(high) if high is not None else None})
+        result['ranges'] = ranges
+    return result
+
+
+def format_bulk_summary(result):
+    if result.get('survival'):
+        return format_survival_summary(result)
+    x, y, z = result['best'][0]['points']
+    hp, defense, spd = result['best'][0]['stats']
+    lines = [f"**{result['name']} weighted bulk · T={result['total_points']} · B={result['bias']:g}**",
+             f"Nature: {result['nature']} (neutral) · Level 50 · 31 IVs",
+             f'**HP {x} / Def {y} / SpD {z} Champions points**',
+             f'Stats: HP {hp} / Def {defense} / SpD {spd}',
+             f"Objective: {result['score']:.10g} (lower is better)",
+             'Minimized: (B / (base Def + 20 + y) + 1 / (base SpD + 20 + z)) / (base HP + 75 + x).',
+             'x + y + z = T; 0–32 whole points per stat. B>1 favors physical bulk; B<1 favors special bulk.',
+             'This is weighted stat bulk, not a guarantee of surviving a particular move.']
+    base = result['base_stats']
+    lines.insert(2, f"Base stats used: HP {base['hp']} / Def {base['def']} / SpD {base['spd']} "
+                    f"({'explicit overrides' if result['custom_base_stats'] else 'bundled Pokédex'}).")
+    if len(result['best']) > 1:
+        lines.append('Equally optimal spreads (HP/Def/SpD): ' + ', '.join('/'.join(map(str, p['points'])) for p in result['best']))
+    if 'ranges' in result:
+        lines += ['', '| HP points | Def points | SpD points | HP | Def | SpD | B range |',
+                  '| --- | --- | --- | --- | --- | --- | --- |']
+        for row in result['ranges']:
+            high = '∞' if row['high'] is None else f"{row['high']:.4f}"
+            values = [*row['points'], *row['stats'], f"[{row['low']:.4f}, {high}{')' if row['high'] is None else ']'}"]
+            lines.append('| ' + ' | '.join(map(str, values)) + ' |')
+        lines.append('B boundaries are rounded to four decimals; neighboring spreads tie at exact boundaries.')
+    return '\n\n'.join(lines[:9]) + '\n' + '\n'.join(lines[9:])
+
+
+def optimize_survival(bulk):
+    """Find minimum defensive investment, then use weighted bulk to rank ties."""
+    from damage_agent.showdown_bridge import run_calculator
+    name, budget = bulk.get('name'), bulk.get('total_points')
+    bias = bulk.get('bias') if bulk.get('bias') is not None else 1
+    # Reuse the stat optimizer's species, budget and weight validation.
+    optimize_bulk(name, budget, bias)
+    if bulk.get('base_stats'):
+        raise ValueError('Survival uses Smogon species stats. Clear custom base stats before checking attacks.')
+    threats = bulk.get('threats') or []
+    if not threats or len(threats) > 6:
+        raise ValueError('Name 1–6 threats, including each attacking Pokémon and move.')
+    defender_slot = dict(bulk.get('defender') or {})
+    defender_slot['name'] = name
+    defender_slot['nature'] = defender_slot.get('nature') or bulk.get('nature') or 'Serious'
+    spread = defender_slot.get('spread') or {}
+    if any(type(v) is not int or not 0 <= v <= 32 for v in spread.values() if v is not None):
+        raise ValueError('Fixed investments must be whole Champions points from 0 to 32.')
+    reserved = sum(spread.get(s) or 0 for s in ('atk', 'spa', 'spe'))
+    if reserved + budget > 66:
+        raise ValueError(f'Only {66-reserved} defensive points remain after the fixed offensive/speed investment.')
+    locked = {s: spread[s] for s in ('hp', 'def', 'spd') if spread.get(s) is not None}
+    if sum(locked.values()) > budget:
+        raise ValueError('Fixed defensive investments exceed the defensive budget T.')
+    if sum(locked.values()) + 32 * (3-len(locked)) < budget:
+        raise ValueError('The fixed stats leave too little room to spend T. Lower T or unlock a defensive stat.')
+    battles, hits = [], []
+    for threat in threats:
+        attack = threat.get('attacker') or {}
+        if not attack.get('name') or not threat.get('move'):
+            raise ValueError('Each threat needs an attacking Pokémon and a move.')
+        count = threat.get('hits') if threat.get('hits') is not None else (bulk.get('hits') or 1)
+        if type(count) is not int or count not in (1, 2, 3):
+            raise ValueError('Choose survival of 1, 2, or 3 consecutive uses of each attack.')
+        battle = build_battle({'attacker': attack, 'defender': defender_slot,
+                               'move': threat['move'], 'field': threat.get('field') or {}})
+        defender = battle['defender']
+        if defender['item'] in ('Focus Sash', 'Focus Band') or defender['ability'] in ('Sturdy', 'Disguise', 'Ice Face'):
+            raise ValueError('This optimizer measures damage-based bulk; Focus Sash, Focus Band, Sturdy, Disguise and Ice Face survival effects are not supported. Choose another item/ability explicitly.')
+        if count > 1 and ((defender['item'] or '').endswith('Berry') or defender['ability'] in ('Weak Armor', 'Stamina', 'Water Compaction', 'Seed Sower', 'Sand Spit')):
+            raise ValueError('Repeated-hit optimization does not yet model consumed berries or reactive defensive/field changes. Remove that item/ability or use one hit.')
+        battles.append(battle)
+        hits.append(count)
+    result = run_calculator({'operation': 'survival', 'battles': battles, 'budget': budget,
+                             'bias': bias, 'locked': locked, 'hits': hits,
+                             'current_hp_percent': battles[0]['defender']['current_hp_percent']}, timeout=120)
+    result.update(survival=True, name=name, total_points=budget, bias=bias,
+                  nature=defender_slot['nature'], battles=battles, locked=locked, reserved=reserved)
+    return result
+
+
+def format_survival_summary(result):
+    def spread(candidate):
+        hp, defense, spd = candidate['points']
+        return f'{hp} HP / {defense} Def / {spd} SpD'
+
+    budget = result['total_points']
+    lines = [f"**{result['name']} · survival optimization · up to {budget} defensive points**",
+             f"Nature: {result['nature']} · Level 50 · 31 IVs · B={result['bias']:g}",
+             'Each threat is checked independently from the listed starting HP. Surviving means HP remains above zero after every maximum damage roll.']
+    chosen = result['minimum']
+    if chosen:
+        stats = chosen['stats']
+        lines += [f"**Minimum to survive all listed threats: {chosen['total']} points**",
+                  f"**{spread(chosen)}** · {budget-chosen['total']} defensive points left",
+                  f"Stats: {stats['hp']} HP / {stats['def']} Def / {stats['spd']} SpD"]
+    else:
+        lines.append('**No spread within this budget survives all listed threats under these assumptions.**')
+    if result['full_budget']:
+        full = result['full_budget']
+        lines.append(f"Best weighted bulk using all {budget} points while surviving every threat: **{spread(full)}**.")
+    reference = result['reference']
+    if reference:
+        failed = [r['attacker'] + ' ' + r['move'] for r in reference['reports'] if not r['survives']]
+        lines.append(f"Unconstrained B-weighted spread: {spread(reference)} — " +
+                     ('survives these checks.' if not failed else 'fails against ' + ', '.join(failed) + '.'))
+    if result['locked']:
+        lines.append('Fixed defensive points: ' + ', '.join(f'{key}={value}' for key, value in result['locked'].items()))
+    lines += ['', 'Minimum points for each threat alone (these spreads are alternatives, not additive):',
+              '| Threat | Uses | Minimum points | HP / Def / SpD |', '| --- | --- | --- | --- |']
+    for i, battle in enumerate(result['battles']):
+        individual = result['individual'][i]
+        report = (chosen or reference)['reports'][i]
+        lines.append(f"| {battle['attacker']['name']} · {battle['move']} | {report['hits']} | " +
+                     (f"{individual['total']} | {' / '.join(map(str, individual['points']))} |" if individual else f'Not possible ≤{budget} | — |'))
+    if chosen or reference:
+        lines += ['', 'Damage checks for ' + ('the minimum recommended spread:' if chosen else 'the unconstrained weighted spread:'),
+                  '| Threat | Uses | Max damage per use | Starting HP | HP left | Survives |', '| --- | --- | --- | --- | --- | --- |']
+        for report in (chosen or reference)['reports']:
+            lines.append(f"| {report['attacker']} · {report['move']} | {report['hits']} | " +
+                         ' + '.join(map(str, report['max_rolls'])) +
+                         f" | {report['starting_hp']} | {report['remaining_hp']} | {'Yes' if report['survives'] else 'No'} |")
+    lines += ['', 'B-weighted bulk breaks ties between equally cheap passing spreads. The full-budget choice also minimizes (B/Def + 1/SpD)/HP among passing spreads.',
+              'Repeated uses recalculate damage at remaining HP, with fixed attacker stats/HP, boosts, and field. No recovery, residual damage, recoil, secondary effects, or between-turn stat changes are simulated. A multi-hit move counts as one use; its calculator hit count is used.', '', '**Threat assumptions**']
+    lines.extend(format_battle_summary(battle) for battle in result['battles'])
+    return '\n\n'.join(lines[:3]) + '\n\n' + '\n'.join(lines[3:])

@@ -27,6 +27,15 @@ def default_ability(name):
     return next(iter(entry.get("abilities", {}).values()), None)
 
 
+def base_stats(name):
+    entry = _pokemon_by_name().get(name, {})
+    parent = _pokemon_by_name().get(entry.get('baseSpecies'), {})
+    stats = entry.get('baseStats') or parent.get('baseStats')
+    if not stats:
+        raise ValueError('Choose a Pokémon with known base stats.')
+    return dict(stats)
+
+
 @lru_cache(maxsize=1)
 def pokemon_names_json():
     """Omit stats, abilities, and other data irrelevant to name matching."""

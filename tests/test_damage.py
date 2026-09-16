@@ -10,11 +10,47 @@ from damage_agent.battle_builder import (
     build_battle,
     champions_points_to_evs,
     ensure_default_doubles,
+    format_battle_summary,
 )
 from damage_agent.showdown_bridge import run_showdown_calc, explain_showdown_damage
 
 
 class DamageTests(unittest.TestCase):
+    def test_offensive_defaults_and_neutral_natures(self):
+        for move, stat in [('Dire Claw', 'atk'), ('Moonblast', 'spa'), ('Psyshock', 'spa')]:
+            with self.subTest(move=move):
+                battle = build_battle(self.battle(move))
+                self.assertEqual(battle['attacker']['evs'][stat], 252)
+                self.assertEqual(sum(battle['attacker']['evs'].values()), 252)
+                self.assertEqual(sum(battle['defender']['evs'].values()), 0)
+                self.assertEqual(battle['attacker']['nature'], 'Serious')
+                self.assertEqual(battle['defender']['nature'], 'Serious')
+                self.assertEqual(format_battle_summary(battle).count('Nature: Serious (neutral)'), 2)
+
+    def test_explicit_offensive_investments_and_natures_win(self):
+        for points in (0, 14, 32):
+            slots = self.battle()
+            slots['attacker'].update(spread={'atk': points}, nature='Adamant')
+            slots['defender']['nature'] = 'Bold'
+            battle = build_battle(slots)
+            self.assertEqual(battle['attacker']['evs']['atk'], champions_points_to_evs(points))
+            summary = format_battle_summary(battle)
+            self.assertIn('Nature: Adamant', summary)
+            self.assertIn('Nature: Bold', summary)
+
+    def test_non_offensive_moves_do_not_gain_investment(self):
+        for move in ('Protect', 'Seismic Toss', 'Foul Play', 'Body Press'):
+            self.assertEqual(sum(build_battle(self.battle(move))['attacker']['evs'].values()), 0)
+
+    def test_default_damage_matches_explicit_maximum(self):
+        slots = self.battle()
+        default_result = run_showdown_calc(build_battle(slots))
+        slots['attacker']['spread'] = {'atk': 32}
+        explicit_result = run_showdown_calc(build_battle(slots))
+        self.assertEqual(default_result['damage'], explicit_result['damage'])
+        slots['attacker']['spread']['atk'] = 0
+        self.assertLess(run_showdown_calc(build_battle(slots))['max_damage'], default_result['max_damage'])
+
     def battle(self, move="Dire Claw", attacker="Sneasler", defender="Primarina"):
         return {"attacker": {"name": attacker}, "defender": {"name": defender},
                 "move": move, "field": {}}

@@ -9,6 +9,7 @@ from damage_agent.battle_builder import (
     STAT_KEYS, BOOST_KEYS, format_battle_summary,
     ensure_default_doubles,
     validate_damage_slots,
+    optimize_bulk, format_bulk_summary,
 )
 from damage_agent.showdown_bridge import run_showdown_calc, explain_showdown_damage
 
@@ -76,11 +77,25 @@ POKEMON_SLOT_SCHEMA = {
 DAMAGE_SLOT_SCHEMA = {
     "type": "OBJECT",
     "properties": {
-        "mode": {"type": "STRING", "enum": ["chat", "clarify", "damage"]},
+        "mode": {"type": "STRING", "enum": ["chat", "clarify", "damage", "bulk"]},
         "message": {"type": "STRING", "nullable": True},
         "attacker": POKEMON_SLOT_SCHEMA,
         "defender": POKEMON_SLOT_SCHEMA,
         "move": {"type": "STRING", "nullable": True},
+        "bulk": {
+            "type": "OBJECT", "nullable": True,
+            "properties": {
+                "name": {"type": "STRING", "nullable": True},
+                "total_points": {"type": "INTEGER", "nullable": True},
+                "bias": {"type": "NUMBER", "nullable": True},
+                "show_ranges": {"type": "BOOLEAN", "nullable": True},
+                "nature": {"type": "STRING", "nullable": True},
+                "base_stats": {
+                    "type": "OBJECT", "nullable": True,
+                    "properties": {key: {"type": "INTEGER", "nullable": True} for key in ('hp', 'def', 'spd')},
+                },
+            },
+        },
         "field": {
             "type": "OBJECT",
             "nullable": True,
@@ -108,6 +123,25 @@ Modes:
 - chat: greeting or unrelated. Set message.
 - clarify: damage question missing attacker, defender, or move. Set message.
 - damage: fill attacker, defender, move, and any mentioned spreads.
+- bulk: optimize weighted HP/Defense/Sp. Defense investment. Fill bulk slots.
+
+Weighted bulk optimization:
+- Extract only; Python minimizes (B/(base Def+20+y) + 1/(base SpD+20+z))/(base HP+75+x).
+- bulk.name: exact canonical Pokemon/form name; bulk.total_points: total defensive
+  Champions points T across HP, Defense, and Sp. Defense, not EVs. Ask for species
+  and T if missing; keep partial bulk slots in clarify responses.
+- bulk.bias: B, the nonnegative physical-to-special weight. Omit if unspecified
+  (Python defaults to 1). Balanced means B=1; twice as physical means B=2.
+  If the user just says more physical/special without a number, ask for B.
+- bulk.show_ranges: true for B ranges, breakpoints, all weightings, or a table like
+  the reference; false for just the optimum at one B. Never calculate spreads or
+  breakpoints yourself. Do not require an attacker or move for bulk optimization.
+- The formula uses neutral nature, level 50, 31 IVs, 0–32 points per stat and
+  T between 0 and 66. Extract any requested bulk.nature; do not silently ignore it.
+- bulk.base_stats: only explicitly supplied BASE HP/Defense/Sp. Defense values
+  (hp, def, spd). Never invent overrides or copy calculated stats into them.
+- This does not optimize survival against specific attacks. Clarify such requests
+  rather than treating a stat-bulk score as proof of survival.
 
 Pokemon slots:
 - name: copy the exact canonical name from the Pokemon names JSON provided below.
@@ -117,6 +151,11 @@ Pokemon slots:
 - spread: Champions stat points 0-32, only stats the user mentioned. Unmentioned stats omitted.
 - Always use spread for stat investments, including when the user calls them EVs. This app uses Champions points exclusively.
 - ability, item, nature, status, boosts, current_hp_percent: only if mentioned, on the Pokemon they belong to.
+- Python defaults both natures to Serious (neutral), and the attacker's relevant
+  offensive investment to 32 points (Attack for physical, Sp. Atk for special).
+  Do not fill these defaults yourself or infer Adamant/Modest from max investment.
+- Explicitly uninvested / no offensive investment means spread.atk 0 and spread.spa 0.
+  Explicit no investments at all means zero for all six spread stats.
 
 Champions points (not EVs):
 - A number with a stat always means Champions points, even if the user says EVs or normal EVs. Never output an evs field.
@@ -134,6 +173,7 @@ Field, only if mentioned:
 - singles / single battle / 1v1 singles => is_double_battle false.
 
 Natures if described: spa raising = Modest, attack raising = Adamant, speed raising special = Timid, Jolly = Jolly.
+Neutral nature means Serious. A specified nature overrides the neutral default.
 Status codes: brn, par, psn, tox, slp, frz.
 """
 
@@ -171,6 +211,18 @@ def parse_damage_slots(user_question, client, conversation=None):
 
 def prepare_damage_request(extraction, user_question, *, conversational=False):
     mode = extraction.get("mode")
+    if mode == 'bulk':
+        bulk = extraction.get('bulk') or {}
+        if not bulk.get('name') or bulk.get('total_points') is None:
+            return {'mode': 'clarify', 'message': 'Which Pokémon and how many total defensive points (T) should I optimize?'}
+        try:
+            result = optimize_bulk(bulk['name'], bulk['total_points'],
+                                   bulk.get('bias') if bulk.get('bias') is not None else 1,
+                                   bulk.get('show_ranges') or False, bulk.get('nature') or 'Serious',
+                                   {k: v for k, v in (bulk.get('base_stats') or {}).items() if v is not None})
+        except ValueError as exc:
+            return {'mode': 'clarify', 'message': str(exc)}
+        return {'mode': 'bulk', 'result': result}
     if mode != "damage":
         return extraction
 
@@ -200,7 +252,7 @@ def apply_common_corrections(request, user_question=""):
 CONTEXT_TURNS = 6
 CONTEXT_MESSAGE_CHARS = 8000
 
-CLEAR_DEFAULTS = {'move': None}
+CLEAR_DEFAULTS = {'move': None, 'bulk.base_stats': {}}
 for role in ('attacker', 'defender'):
     for key, value in {'item': None, 'ability': 'No Ability', 'nature': 'Serious',
                        'status': None, 'current_hp_percent': 100}.items():
@@ -241,18 +293,28 @@ Never guess which Pokemon an ambiguous reference replaces. Ask instead.
 Only the supplied recent messages and current slots are available. If the user
 refers to an older battle or detail absent from both, ask them to restate it; do
 not invent a memory of it.
+For a bulk request, merge the bulk fields independently of damage battle fields.
+Use bulk mode for follow-ups changing B, T, species, nature, or showing ranges in
+an active bulk conversation. Unspecified bulk fields stay unchanged, even when
+the species changes, except base_stats overrides reset on a species change unless
+explicitly supplied again. To return to catalog base stats use clear bulk.base_stats.
+B=0 and show_ranges=false are explicit values to preserve.
+Use damage mode when the user returns to an attack calculation; do not apply an
+optimized spread to a damage battle unless the user explicitly asks for it.
 Chat context JSON:
 ''' + json.dumps(state, ensure_ascii=False)
 
 
 def merge_slots(previous, patch):
     result = {} if patch.get('new_battle') else deepcopy(previous or {})
-    for role in ('attacker', 'defender', 'field'):
+    for role in ('attacker', 'defender', 'field', 'bulk'):
         changes = patch.get(role)
         if not isinstance(changes, dict):
             continue
         current = result.setdefault(role, {})
-        if role != 'field' and changes.get('name') and changes['name'] != current.get('name'):
+        if role == 'bulk' and changes.get('name') and changes['name'] != current.get('name'):
+            current.pop('base_stats', None)
+        if role in ('attacker', 'defender') and changes.get('name') and changes['name'] != current.get('name'):
             current = result[role] = {}
         for key, value in changes.items():
             if value is None:
@@ -270,8 +332,9 @@ def merge_slots(previous, patch):
         parts = path.split('.')
         for part in parts[:-1]:
             target = target.setdefault(part, {})
-        target[parts[-1]] = CLEAR_DEFAULTS[path]
-    result['mode'] = 'damage'
+        target[parts[-1]] = deepcopy(CLEAR_DEFAULTS[path])
+    result['mode'] = patch.get('mode') if patch.get('mode') in ('damage', 'bulk') else (
+        'bulk' if patch.get('bulk') else result.get('mode', 'damage'))
     return result
 
 
@@ -292,9 +355,12 @@ def answer_question(question, state=None):
         state = {'slots': {}, 'history': []}
     slots = merge_slots(state.get('slots'), patch) if patch.get('mode') != 'chat' else state.get('slots', {})
     request = (prepare_damage_request(slots, question, conversational=True)
-               if patch.get('mode') == 'damage' else patch)
+               if patch.get('mode') in ('damage', 'bulk') else patch)
     if request.get("mode") in ("chat", "clarify"):
         answer = request.get("message") or "Include the attacker, defender, and move in your question."
+        return answer, next_state(state, slots, question, answer)
+    if request.get('mode') == 'bulk':
+        answer = format_bulk_summary(request['result'])
         return answer, next_state(state, slots, question, answer)
     if request.get("mode") != "damage":
         raise ValueError("I couldn't understand that battle. Please include both Pokémon and the move.")
@@ -315,7 +381,8 @@ def run_agent():
     client = create_client()
     print("Pokemon Damage Calc Agent using Google Gemini + Showdown Calc")
     print("Gemini fills attacker, defender, move, and spreads. Calc assembly is local.")
-    print("Type a battle question. Type 'quit' to stop.")
+    print("Ask a battle question or optimize bulk with a Pokemon, T budget, and optional B weight.")
+    print("Type 'quit' to stop.")
     print()
 
     while True:
@@ -332,6 +399,10 @@ def run_agent():
             extraction = parse_damage_slots(user_question, client)
             battle_request = prepare_damage_request(extraction, user_question)
             mode = battle_request.get("mode")
+
+            if mode == 'bulk':
+                print('\n' + format_bulk_summary(battle_request['result']) + '\n')
+                continue
 
             if mode == "chat":
                 print()

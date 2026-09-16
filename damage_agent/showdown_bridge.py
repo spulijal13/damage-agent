@@ -14,11 +14,15 @@ def run_showdown_calc(battle):
         "field": battle.get("field", {}),
     }
 
+    return run_calculator(payload)
+
+
+def run_calculator(payload, timeout=30):
     result = subprocess.run(
         ["node", str(CALCULATOR_PATH), json.dumps(payload)],
         capture_output=True,
         text=True,
-        timeout=30,
+        timeout=timeout,
     )
 
     if result.returncode != 0:

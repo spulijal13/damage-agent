@@ -23,6 +23,20 @@ class ConversationTests(unittest.TestCase):
         self.assertEqual(battle['attacker']['evs']['atk'], 252)
         self.assertNotIn('critical', self.slots['field'])
 
+    def test_move_changes_recompute_only_implicit_offensive_defaults(self):
+        slots = {'mode': 'damage', 'attacker': {'name': 'Lucario'}, 'defender': {'name': 'Primarina'}, 'move': 'Close Combat'}
+        physical = prepare_damage_request(slots, '', conversational=True)['battle']
+        self.assertEqual(physical['attacker']['evs']['atk'], 252)
+        updated = merge_slots(slots, {'move': 'Aura Sphere', 'mode': 'damage'})
+        special = prepare_damage_request(updated, '', conversational=True)['battle']
+        self.assertEqual(special['attacker']['evs']['spa'], 252)
+        self.assertEqual(special['attacker']['evs']['atk'], 0)
+        uninvested = merge_slots(updated, {'attacker': {'spread': {'spa': 0}, 'nature': 'Timid'}})
+        followup = merge_slots(uninvested, {'field': {'critical': True}})
+        battle = prepare_damage_request(followup, '', conversational=True)['battle']
+        self.assertEqual(battle['attacker']['evs']['spa'], 0)
+        self.assertEqual(battle['attacker']['nature'], 'Timid')
+
     def test_explicit_removal_and_false(self):
         updated = merge_slots(self.slots, {'clear': ['defender.item', 'attacker.spread.atk', 'field.weather'],
                                           'field': {'critical': False, 'reflect': True}})

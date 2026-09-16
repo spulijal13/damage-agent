@@ -58,17 +58,41 @@ function renderList() {
   }
 }
 async function refreshList() { chats = await api(); renderList(); }
+function appendInline(container, content) {
+  content.split(/\*\*([^*]+)\*\*/g).forEach((text, i) => {
+    if (i % 2) { const strong = document.createElement('strong'); strong.textContent = text; container.append(strong); }
+    else container.append(document.createTextNode(text));
+  });
+}
+function appendAnswer(container, content) {
+  const lines = content.split('\n');
+  const cells = line => line.trim().slice(1, -1).split('|').map(cell => cell.trim());
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith('| ') && /^\|(?:\s*:?-{3,}:?\s*\|)+\s*$/.test(lines[i + 1] || '')) {
+      const wrapper = document.createElement('div'); wrapper.className = 'message-table'; wrapper.tabIndex = 0;
+      wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Bulk optimization ranges');
+      const table = document.createElement('table');
+      const head = document.createElement('thead'), row = document.createElement('tr');
+      cells(lines[i]).forEach(value => { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = value; row.append(cell); });
+      head.append(row); table.append(head);
+      const body = document.createElement('tbody'); i += 2;
+      while (i < lines.length && lines[i].startsWith('| ') && lines[i].trim().endsWith('|')) {
+        const row = document.createElement('tr');
+        cells(lines[i]).forEach(value => { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); });
+        body.append(row); i++;
+      }
+      i--; table.append(body); wrapper.append(table); container.append(wrapper);
+    } else appendInline(container, lines[i] + (i < lines.length - 1 ? '\n' : ''));
+  }
+}
 function message(role, content, waiting = false) {
   const article = document.createElement('article');
   article.className = `message ${role}${waiting ? ' pending' : ''}`;
   const label = document.createElement('div'); label.className = 'message-label';
   label.textContent = role === 'user' ? 'You' : 'Damage Agent';
   const body = document.createElement('div'); body.className = 'message-content';
-  // Render only bold emphasis; model/user content never becomes executable HTML.
-  if (role === 'assistant') content.split(/\*\*([^*]+)\*\*/g).forEach((text, i) => {
-    if (i % 2) { const strong = document.createElement('strong'); strong.textContent = text; body.append(strong); }
-    else body.append(document.createTextNode(text));
-  });
+  // Text, emphasis and tables only; model/user content never becomes executable HTML.
+  if (role === 'assistant') appendAnswer(body, content);
   else body.textContent = content;
   article.append(label, body); $('messages').append(article);
 }
