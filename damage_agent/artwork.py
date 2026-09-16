@@ -1,5 +1,5 @@
 """Match supplied Sugimori artwork by Pokédex number and canonical form name."""
-from damage_agent.pokemon_labels import gendered_name
+from damage_agent.pokemon_catalog import gendered_name
 
 import re
 import unicodedata

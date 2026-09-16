@@ -87,23 +87,61 @@ chainlit run chainlit_app.py -w --host 127.0.0.1
 
 Open http://localhost:8000. The frontend uses the same `GEMINI_API_KEY` from
 `.env` as the CLI. It includes a black theme, a chat composer, and visible message
-history within the current session. Chats are not persisted across new sessions.
-Each request still needs the full battle; previous messages are not sent to Gemini.
+history with **New chat** and a sidebar for reopening, renaming, searching by title, and
+deleting saved chats. Each chat keeps its own battle slots and the last six turns
+for follow-up questions and clarification answers. Gemini returns changes to that
+battle; Python merges them before recalculating. Starting a new chat clears context.
 The existing CLI remains available through `python -m damage_agent.agent`.
+
+Chat history lives in `storage/chats.sqlite3` (override with `CHAT_DB_PATH`). It is
+a **public shared library with no login**: all visitors can read, continue, rename,
+and delete its chats. Chat context is isolated per conversation, not per visitor.
+Existing chats from before persistence was enabled cannot be recovered.
+
+The app uses a custom chat sidebar because Chainlit's built-in history requires
+authentication. Chainlit still hosts the application with the same startup command.
+`public/workspace.html` and `navigation.js` keep the chat and team-builder pages
+mounted across tab switches. `public/chats.html`, `chats.js`, and `chats.css` implement
+the chat UI; `frontend/chat_api.py` owns `/api/chats` and SQLite storage,
+committing messages and battle context atomically. Concurrent changes return a conflict
+instead of overwriting a newer turn. Failed calculations leave the saved context intact.
+Follow-up parsing, context, and merging live in `damage_agent/agent.py`; the CLI
+continues to use standalone requests.
+
+Hosted chat history needs persistent storage just like teams; the optional Render
+persistent-disk blueprint covers both default databases. Back up both databases.
+No separate database service or authentication secret is needed.
+
+### Chat context limits
+
+- SQLite retains all saved messages until you delete the chat.
+- Each Gemini request includes the current structured battle, the latest **six
+  user/assistant exchanges** (12 messages), and the new question, alongside the
+  parser instructions and Pokémon names catalog.
+- Each message in the recent context is capped at **8,000 characters**. These are
+  application limits, configured by `CONTEXT_TURNS` and `CONTEXT_MESSAGE_CHARS`
+  in `damage_agent/agent.py`, not Gemini's model context-window limits.
+- Current battle fields survive when their original messages leave the six-turn
+  window. Earlier conversation details and previous battle variants are not
+  automatically retrieved from SQLite. The parser is instructed to ask for missing
+  details rather than invent them. A new chat or explicit new battle clears context.
+- There is no turn count that guarantees hallucinations will begin or cannot happen.
+  Parsing can be wrong on any turn; the damage arithmetic still runs locally in
+  Smogon. The displayed battle summary lets you check the interpreted assumptions.
 
 ## Repository layout
 
 ```text
 Damage_Agent/
-├── damage_agent/       # Gemini parser, battle assembly, summaries, Node bridge
-├── frontend/           # Chainlit chat entry point
+├── damage_agent/       # Parser/context, battle assembly/summary, catalog, team logic, Node bridge
+├── frontend/           # Chat API + SQLite; team API + shared HTTP middleware
 ├── calculator/         # Smogon JavaScript adapter
 ├── data/               # Pokédex JSON
 ├── legacy/             # Disconnected optimizer and sequence simulator
 ├── tests/              # Existing unit tests
 ├── public/             # Chainlit theme and styles
 ├── .chainlit/          # Chainlit configuration
-├── chainlit_app.py     # Thin launcher for the frontend
+├── chainlit_app.py     # Chainlit launch, lifecycle handlers, route registration
 ├── chainlit.md         # Chainlit welcome/help content
 ├── requirements.txt    # Python dependencies
 └── package.json        # Node dependencies

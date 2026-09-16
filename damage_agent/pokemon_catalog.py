@@ -1,6 +1,7 @@
 """Parser names and local ability defaults from the bundled Pokédex."""
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 
@@ -30,3 +31,27 @@ def default_ability(name):
 def pokemon_names_json():
     """Omit stats, abilities, and other data irrelevant to name matching."""
     return json.dumps(sorted(pokemon_names()), ensure_ascii=False, separators=(",", ":"))
+
+
+# Presentation labels; canonical names stay stable in storage and calculations.
+GENDERED_SPECIES = {'Indeedee', 'Meowstic', 'Basculegion', 'Oinkologne'}
+
+
+def gendered_name(name):
+    if name in GENDERED_SPECIES:
+        return name + '-M'
+    if re.search(r'-(M|F)(?:-|$)', name):
+        return name
+    return None
+
+
+def display_name(name):
+    name = gendered_name(name) or name
+    for region, adjective in [('Alola', 'Alolan'), ('Galar', 'Galarian'), ('Hisui', 'Hisuian'), ('Paldea', 'Paldean')]:
+        if re.search(rf'-{region}(?=-|$)', name):
+            name = adjective + ' ' + re.sub(rf'-{region}(?=-|$)', '', name)
+            break
+    if '-Mega' in name:
+        base, suffix = name.split('-Mega', 1)
+        name = 'Mega ' + base + suffix.replace('-', ' ')
+    return re.sub(r'-(M|F)(?= |$)', r' - \1', name)

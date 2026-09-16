@@ -1,6 +1,6 @@
 """Persistent shared team library. Stat investments are Champions points, not EVs."""
 from damage_agent.artwork import artwork_path
-from damage_agent.pokemon_labels import display_name, gendered_name
+from damage_agent.pokemon_catalog import display_name, gendered_name
 
 import json
 import os

@@ -2,7 +2,7 @@ import unittest
 from fastapi import FastAPI
 from fastapi.responses import Response
 from fastapi.testclient import TestClient
-from frontend.cache_policy import FrontendCachePolicy
+from frontend.team_api import FrontendCachePolicy
 
 
 class CachePolicyTests(unittest.TestCase):

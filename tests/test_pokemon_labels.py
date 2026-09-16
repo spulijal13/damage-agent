@@ -1,5 +1,5 @@
 import unittest
-from damage_agent.pokemon_labels import display_name
+from damage_agent.pokemon_catalog import display_name
 from damage_agent.artwork import artwork_path
 
 

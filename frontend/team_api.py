@@ -3,8 +3,21 @@ from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Body, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from damage_agent.artwork import artwork_path
 from damage_agent import teams
+
+
+class FrontendCachePolicy(BaseHTTPMiddleware):
+    async def dispatch(self, request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if (path == '/' or path == '/api/teams/catalog' or path.startswith('/api/chats')
+                or (path.startswith('/public/') and path.endswith(('.html', '.js', '.css')))):
+            response.headers['Cache-Control'] = 'no-store, max-age=0'
+            response.headers['Pragma'] = 'no-cache'
+            response.headers['Expires'] = '0'
+        return response
 
 
 def same_origin(request: Request):
@@ -93,7 +106,6 @@ def delete_pokemon(team_id: int, pokemon_id: int):
 
 def register_routes():
     from chainlit.server import app
-    from frontend.cache_policy import FrontendCachePolicy
     if not getattr(app.state, 'frontend_cache_policy_installed', False):
         app.add_middleware(FrontendCachePolicy)
         app.state.frontend_cache_policy_installed = True
