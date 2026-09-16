@@ -1,0 +1,3940 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Pokémon Hold Items</title>
+
+<style>
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f4f4;
+    margin: 30px;
+}
+
+h1 {
+    text-align: center;
+}
+
+#search {
+    display: block;
+    margin: 20px auto 30px auto;
+    width: 350px;
+    max-width: 90%;
+    padding: 12px;
+    font-size: 18px;
+}
+
+.gallery {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 15px;
+}
+
+.item {
+    background: white;
+    border-radius: 10px;
+    padding: 20px 10px;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+}
+
+.item img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    image-rendering: pixelated;
+}
+
+.item-name {
+    margin-top: 12px;
+    font-weight: bold;
+}
+
+</style>
+</head>
+
+<body>
+
+<h1>Pokémon Hold Items</h1>
+
+<input
+    id="search"
+    type="text"
+    placeholder="Search items..."
+    onkeyup="filterItems()"
+>
+
+<div class="gallery">
+
+    <div class="item" data-name="ability capsule">
+
+        <img
+            src="images/Ability_Capsule.png"
+            alt="Ability Capsule"
+        >
+
+        <div class="item-name">
+            Ability Capsule
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="abomasite">
+
+        <img
+            src="images/Abomasite.png"
+            alt="Abomasite"
+        >
+
+        <div class="item-name">
+            Abomasite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="absolite">
+
+        <img
+            src="images/Absolite.png"
+            alt="Absolite"
+        >
+
+        <div class="item-name">
+            Absolite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="absorb bulb">
+
+        <img
+            src="images/Absorb_Bulb.png"
+            alt="Absorb Bulb"
+        >
+
+        <div class="item-name">
+            Absorb Bulb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="adamant crystal">
+
+        <img
+            src="images/Adamant_Crystal.png"
+            alt="Adamant Crystal"
+        >
+
+        <div class="item-name">
+            Adamant Crystal
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="adamant orb">
+
+        <img
+            src="images/Adamant_Orb.png"
+            alt="Adamant Orb"
+        >
+
+        <div class="item-name">
+            Adamant Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="adrenaline orb">
+
+        <img
+            src="images/Adrenaline_Orb.png"
+            alt="Adrenaline Orb"
+        >
+
+        <div class="item-name">
+            Adrenaline Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="aerodactylite">
+
+        <img
+            src="images/Aerodactylite.png"
+            alt="Aerodactylite"
+        >
+
+        <div class="item-name">
+            Aerodactylite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="aggronite">
+
+        <img
+            src="images/Aggronite.png"
+            alt="Aggronite"
+        >
+
+        <div class="item-name">
+            Aggronite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="air balloon">
+
+        <img
+            src="images/Air_Balloon.png"
+            alt="Air Balloon"
+        >
+
+        <div class="item-name">
+            Air Balloon
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="alakazite">
+
+        <img
+            src="images/Alakazite.png"
+            alt="Alakazite"
+        >
+
+        <div class="item-name">
+            Alakazite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="aloraichium z">
+
+        <img
+            src="images/Aloraichium_Z.png"
+            alt="Aloraichium Z"
+        >
+
+        <div class="item-name">
+            Aloraichium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="altarianite">
+
+        <img
+            src="images/Altarianite.png"
+            alt="Altarianite"
+        >
+
+        <div class="item-name">
+            Altarianite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ampharosite">
+
+        <img
+            src="images/Ampharosite.png"
+            alt="Ampharosite"
+        >
+
+        <div class="item-name">
+            Ampharosite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="amulet coin">
+
+        <img
+            src="images/Amulet_Coin.png"
+            alt="Amulet Coin"
+        >
+
+        <div class="item-name">
+            Amulet Coin
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="assault vest">
+
+        <img
+            src="images/Assault_Vest.png"
+            alt="Assault Vest"
+        >
+
+        <div class="item-name">
+            Assault Vest
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="audinite">
+
+        <img
+            src="images/Audinite.png"
+            alt="Audinite"
+        >
+
+        <div class="item-name">
+            Audinite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="banettite">
+
+        <img
+            src="images/Banettite.png"
+            alt="Banettite"
+        >
+
+        <div class="item-name">
+            Banettite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="beedrillite">
+
+        <img
+            src="images/Beedrillite.png"
+            alt="Beedrillite"
+        >
+
+        <div class="item-name">
+            Beedrillite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="berry sweet">
+
+        <img
+            src="images/Berry_Sweet.png"
+            alt="Berry Sweet"
+        >
+
+        <div class="item-name">
+            Berry Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="big root">
+
+        <img
+            src="images/Big_Root.png"
+            alt="Big Root"
+        >
+
+        <div class="item-name">
+            Big Root
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="binding band">
+
+        <img
+            src="images/Binding_Band.png"
+            alt="Binding Band"
+        >
+
+        <div class="item-name">
+            Binding Band
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="black belt">
+
+        <img
+            src="images/Black_Belt.png"
+            alt="Black Belt"
+        >
+
+        <div class="item-name">
+            Black Belt
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="black glasses">
+
+        <img
+            src="images/Black_Glasses.png"
+            alt="Black Glasses"
+        >
+
+        <div class="item-name">
+            Black Glasses
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="black sludge">
+
+        <img
+            src="images/Black_Sludge.png"
+            alt="Black Sludge"
+        >
+
+        <div class="item-name">
+            Black Sludge
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="blank plate">
+
+        <img
+            src="images/Blank_Plate.png"
+            alt="Blank Plate"
+        >
+
+        <div class="item-name">
+            Blank Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="blastoisinite">
+
+        <img
+            src="images/Blastoisinite.png"
+            alt="Blastoisinite"
+        >
+
+        <div class="item-name">
+            Blastoisinite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="blazikenite">
+
+        <img
+            src="images/Blazikenite.png"
+            alt="Blazikenite"
+        >
+
+        <div class="item-name">
+            Blazikenite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="blunder policy">
+
+        <img
+            src="images/Blunder_Policy.png"
+            alt="Blunder Policy"
+        >
+
+        <div class="item-name">
+            Blunder Policy
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="bright powder">
+
+        <img
+            src="images/Bright_Powder.png"
+            alt="Bright Powder"
+        >
+
+        <div class="item-name">
+            Bright Powder
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="bug gem">
+
+        <img
+            src="images/Bug_Gem.png"
+            alt="Bug Gem"
+        >
+
+        <div class="item-name">
+            Bug Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="bug memory">
+
+        <img
+            src="images/Bug_Memory.png"
+            alt="Bug Memory"
+        >
+
+        <div class="item-name">
+            Bug Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="buginium z">
+
+        <img
+            src="images/Buginium_Z.png"
+            alt="Buginium Z"
+        >
+
+        <div class="item-name">
+            Buginium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="burn drive">
+
+        <img
+            src="images/Burn_Drive.png"
+            alt="Burn Drive"
+        >
+
+        <div class="item-name">
+            Burn Drive
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="cameruptite">
+
+        <img
+            src="images/Cameruptite.png"
+            alt="Cameruptite"
+        >
+
+        <div class="item-name">
+            Cameruptite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="cell battery">
+
+        <img
+            src="images/Cell_Battery.png"
+            alt="Cell Battery"
+        >
+
+        <div class="item-name">
+            Cell Battery
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="charcoal">
+
+        <img
+            src="images/Charcoal.png"
+            alt="Charcoal"
+        >
+
+        <div class="item-name">
+            Charcoal
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="charizardite x">
+
+        <img
+            src="images/Charizardite_X.png"
+            alt="Charizardite X"
+        >
+
+        <div class="item-name">
+            Charizardite X
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="charizardite y">
+
+        <img
+            src="images/Charizardite_Y.png"
+            alt="Charizardite Y"
+        >
+
+        <div class="item-name">
+            Charizardite Y
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="chill drive">
+
+        <img
+            src="images/Chill_Drive.png"
+            alt="Chill Drive"
+        >
+
+        <div class="item-name">
+            Chill Drive
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="chipped pot">
+
+        <img
+            src="images/Chipped_Pot.png"
+            alt="Chipped Pot"
+        >
+
+        <div class="item-name">
+            Chipped Pot
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="choice band">
+
+        <img
+            src="images/Choice_Band.png"
+            alt="Choice Band"
+        >
+
+        <div class="item-name">
+            Choice Band
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="choice scarf">
+
+        <img
+            src="images/Choice_Scarf.png"
+            alt="Choice Scarf"
+        >
+
+        <div class="item-name">
+            Choice Scarf
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="choice specs">
+
+        <img
+            src="images/Choice_Specs.png"
+            alt="Choice Specs"
+        >
+
+        <div class="item-name">
+            Choice Specs
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="cleanse tag">
+
+        <img
+            src="images/Cleanse_Tag.png"
+            alt="Cleanse Tag"
+        >
+
+        <div class="item-name">
+            Cleanse Tag
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="clover sweet">
+
+        <img
+            src="images/Clover_Sweet.png"
+            alt="Clover Sweet"
+        >
+
+        <div class="item-name">
+            Clover Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="covert cloak">
+
+        <img
+            src="images/Covert_Cloak.png"
+            alt="Covert Cloak"
+        >
+
+        <div class="item-name">
+            Covert Cloak
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="cracked pot">
+
+        <img
+            src="images/Cracked_Pot.png"
+            alt="Cracked Pot"
+        >
+
+        <div class="item-name">
+            Cracked Pot
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="damp rock">
+
+        <img
+            src="images/Damp_Rock.png"
+            alt="Damp Rock"
+        >
+
+        <div class="item-name">
+            Damp Rock
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dark gem">
+
+        <img
+            src="images/Dark_Gem.png"
+            alt="Dark Gem"
+        >
+
+        <div class="item-name">
+            Dark Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dark memory">
+
+        <img
+            src="images/Dark_Memory.png"
+            alt="Dark Memory"
+        >
+
+        <div class="item-name">
+            Dark Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="darkinium z">
+
+        <img
+            src="images/Darkinium_Z.png"
+            alt="Darkinium Z"
+        >
+
+        <div class="item-name">
+            Darkinium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="decidium z">
+
+        <img
+            src="images/Decidium_Z.png"
+            alt="Decidium Z"
+        >
+
+        <div class="item-name">
+            Decidium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="deep sea scale">
+
+        <img
+            src="images/Deep_Sea_Scale.png"
+            alt="Deep Sea Scale"
+        >
+
+        <div class="item-name">
+            Deep Sea Scale
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="deep sea tooth">
+
+        <img
+            src="images/Deep_Sea_Tooth.png"
+            alt="Deep Sea Tooth"
+        >
+
+        <div class="item-name">
+            Deep Sea Tooth
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="destiny knot">
+
+        <img
+            src="images/Destiny_Knot.png"
+            alt="Destiny Knot"
+        >
+
+        <div class="item-name">
+            Destiny Knot
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="diancite">
+
+        <img
+            src="images/Diancite.png"
+            alt="Diancite"
+        >
+
+        <div class="item-name">
+            Diancite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="douse drive">
+
+        <img
+            src="images/Douse_Drive.png"
+            alt="Douse Drive"
+        >
+
+        <div class="item-name">
+            Douse Drive
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="draco plate">
+
+        <img
+            src="images/Draco_Plate.png"
+            alt="Draco Plate"
+        >
+
+        <div class="item-name">
+            Draco Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dragon fang">
+
+        <img
+            src="images/Dragon_Fang.png"
+            alt="Dragon Fang"
+        >
+
+        <div class="item-name">
+            Dragon Fang
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dragon gem">
+
+        <img
+            src="images/Dragon_Gem.png"
+            alt="Dragon Gem"
+        >
+
+        <div class="item-name">
+            Dragon Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dragon memory">
+
+        <img
+            src="images/Dragon_Memory.png"
+            alt="Dragon Memory"
+        >
+
+        <div class="item-name">
+            Dragon Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dragonium z">
+
+        <img
+            src="images/Dragonium_Z.png"
+            alt="Dragonium Z"
+        >
+
+        <div class="item-name">
+            Dragonium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dread plate">
+
+        <img
+            src="images/Dread_Plate.png"
+            alt="Dread Plate"
+        >
+
+        <div class="item-name">
+            Dread Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="dropped item">
+
+        <img
+            src="images/Dropped_Item.png"
+            alt="Dropped Item"
+        >
+
+        <div class="item-name">
+            Dropped Item
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="earth plate">
+
+        <img
+            src="images/Earth_Plate.png"
+            alt="Earth Plate"
+        >
+
+        <div class="item-name">
+            Earth Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="eevium z">
+
+        <img
+            src="images/Eevium_Z.png"
+            alt="Eevium Z"
+        >
+
+        <div class="item-name">
+            Eevium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="eject button">
+
+        <img
+            src="images/Eject_Button.png"
+            alt="Eject Button"
+        >
+
+        <div class="item-name">
+            Eject Button
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="eject pack">
+
+        <img
+            src="images/Eject_Pack.png"
+            alt="Eject Pack"
+        >
+
+        <div class="item-name">
+            Eject Pack
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="electric gem">
+
+        <img
+            src="images/Electric_Gem.png"
+            alt="Electric Gem"
+        >
+
+        <div class="item-name">
+            Electric Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="electric memory">
+
+        <img
+            src="images/Electric_Memory.png"
+            alt="Electric Memory"
+        >
+
+        <div class="item-name">
+            Electric Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="electric seed">
+
+        <img
+            src="images/Electric_Seed.png"
+            alt="Electric Seed"
+        >
+
+        <div class="item-name">
+            Electric Seed
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="electrium z">
+
+        <img
+            src="images/Electrium_Z.png"
+            alt="Electrium Z"
+        >
+
+        <div class="item-name">
+            Electrium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="elevator key">
+
+        <img
+            src="images/Elevator_Key.png"
+            alt="Elevator Key"
+        >
+
+        <div class="item-name">
+            Elevator Key
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="everstone">
+
+        <img
+            src="images/Everstone.png"
+            alt="Everstone"
+        >
+
+        <div class="item-name">
+            Everstone
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="eviolite">
+
+        <img
+            src="images/Eviolite.png"
+            alt="Eviolite"
+        >
+
+        <div class="item-name">
+            Eviolite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="exp. share">
+
+        <img
+            src="images/Exp._Share.png"
+            alt="Exp. Share"
+        >
+
+        <div class="item-name">
+            Exp. Share
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="expert belt">
+
+        <img
+            src="images/Expert_Belt.png"
+            alt="Expert Belt"
+        >
+
+        <div class="item-name">
+            Expert Belt
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fairium z">
+
+        <img
+            src="images/Fairium_Z.png"
+            alt="Fairium Z"
+        >
+
+        <div class="item-name">
+            Fairium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fairy memory">
+
+        <img
+            src="images/Fairy_Memory.png"
+            alt="Fairy Memory"
+        >
+
+        <div class="item-name">
+            Fairy Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fighting gem">
+
+        <img
+            src="images/Fighting_Gem.png"
+            alt="Fighting Gem"
+        >
+
+        <div class="item-name">
+            Fighting Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fighting memory">
+
+        <img
+            src="images/Fighting_Memory.png"
+            alt="Fighting Memory"
+        >
+
+        <div class="item-name">
+            Fighting Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fightinium z">
+
+        <img
+            src="images/Fightinium_Z.png"
+            alt="Fightinium Z"
+        >
+
+        <div class="item-name">
+            Fightinium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fire gem">
+
+        <img
+            src="images/Fire_Gem.png"
+            alt="Fire Gem"
+        >
+
+        <div class="item-name">
+            Fire Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fire memory">
+
+        <img
+            src="images/Fire_Memory.png"
+            alt="Fire Memory"
+        >
+
+        <div class="item-name">
+            Fire Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="firium z">
+
+        <img
+            src="images/Firium_Z.png"
+            alt="Firium Z"
+        >
+
+        <div class="item-name">
+            Firium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="fist plate">
+
+        <img
+            src="images/Fist_Plate.png"
+            alt="Fist Plate"
+        >
+
+        <div class="item-name">
+            Fist Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="flame orb">
+
+        <img
+            src="images/Flame_Orb.png"
+            alt="Flame Orb"
+        >
+
+        <div class="item-name">
+            Flame Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="flame plate">
+
+        <img
+            src="images/Flame_Plate.png"
+            alt="Flame Plate"
+        >
+
+        <div class="item-name">
+            Flame Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="float stone">
+
+        <img
+            src="images/Float_Stone.png"
+            alt="Float Stone"
+        >
+
+        <div class="item-name">
+            Float Stone
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="flower sweet">
+
+        <img
+            src="images/Flower_Sweet.png"
+            alt="Flower Sweet"
+        >
+
+        <div class="item-name">
+            Flower Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="flying gem">
+
+        <img
+            src="images/Flying_Gem.png"
+            alt="Flying Gem"
+        >
+
+        <div class="item-name">
+            Flying Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="flying memory">
+
+        <img
+            src="images/Flying_Memory.png"
+            alt="Flying Memory"
+        >
+
+        <div class="item-name">
+            Flying Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="flyinium z">
+
+        <img
+            src="images/Flyinium_Z.png"
+            alt="Flyinium Z"
+        >
+
+        <div class="item-name">
+            Flyinium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="focus band">
+
+        <img
+            src="images/Focus_Band.png"
+            alt="Focus Band"
+        >
+
+        <div class="item-name">
+            Focus Band
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="focus sash">
+
+        <img
+            src="images/Focus_Sash.png"
+            alt="Focus Sash"
+        >
+
+        <div class="item-name">
+            Focus Sash
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="full incense">
+
+        <img
+            src="images/Full_Incense.png"
+            alt="Full Incense"
+        >
+
+        <div class="item-name">
+            Full Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="galladite">
+
+        <img
+            src="images/Galladite.png"
+            alt="Galladite"
+        >
+
+        <div class="item-name">
+            Galladite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="garchompite">
+
+        <img
+            src="images/Garchompite.png"
+            alt="Garchompite"
+        >
+
+        <div class="item-name">
+            Garchompite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="gardevoirite">
+
+        <img
+            src="images/Gardevoirite.png"
+            alt="Gardevoirite"
+        >
+
+        <div class="item-name">
+            Gardevoirite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="gengarite">
+
+        <img
+            src="images/Gengarite.png"
+            alt="Gengarite"
+        >
+
+        <div class="item-name">
+            Gengarite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ghost gem">
+
+        <img
+            src="images/Ghost_Gem.png"
+            alt="Ghost Gem"
+        >
+
+        <div class="item-name">
+            Ghost Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ghost memory">
+
+        <img
+            src="images/Ghost_Memory.png"
+            alt="Ghost Memory"
+        >
+
+        <div class="item-name">
+            Ghost Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ghostium z">
+
+        <img
+            src="images/Ghostium_Z.png"
+            alt="Ghostium Z"
+        >
+
+        <div class="item-name">
+            Ghostium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="glalitite">
+
+        <img
+            src="images/Glalitite.png"
+            alt="Glalitite"
+        >
+
+        <div class="item-name">
+            Glalitite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grass gem">
+
+        <img
+            src="images/Grass_Gem.png"
+            alt="Grass Gem"
+        >
+
+        <div class="item-name">
+            Grass Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grass memory">
+
+        <img
+            src="images/Grass_Memory.png"
+            alt="Grass Memory"
+        >
+
+        <div class="item-name">
+            Grass Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grassium z">
+
+        <img
+            src="images/Grassium_Z.png"
+            alt="Grassium Z"
+        >
+
+        <div class="item-name">
+            Grassium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grassy seed">
+
+        <img
+            src="images/Grassy_Seed.png"
+            alt="Grassy Seed"
+        >
+
+        <div class="item-name">
+            Grassy Seed
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grip claw">
+
+        <img
+            src="images/Grip_Claw.png"
+            alt="Grip Claw"
+        >
+
+        <div class="item-name">
+            Grip Claw
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="griseous core">
+
+        <img
+            src="images/Griseous_Core.png"
+            alt="Griseous Core"
+        >
+
+        <div class="item-name">
+            Griseous Core
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="griseous orb">
+
+        <img
+            src="images/Griseous_Orb.png"
+            alt="Griseous Orb"
+        >
+
+        <div class="item-name">
+            Griseous Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grit dust">
+
+        <img
+            src="images/Grit_Dust.png"
+            alt="Grit Dust"
+        >
+
+        <div class="item-name">
+            Grit Dust
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grit gravel">
+
+        <img
+            src="images/Grit_Gravel.png"
+            alt="Grit Gravel"
+        >
+
+        <div class="item-name">
+            Grit Gravel
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grit pebble">
+
+        <img
+            src="images/Grit_Pebble.png"
+            alt="Grit Pebble"
+        >
+
+        <div class="item-name">
+            Grit Pebble
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grit rock">
+
+        <img
+            src="images/Grit_Rock.png"
+            alt="Grit Rock"
+        >
+
+        <div class="item-name">
+            Grit Rock
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ground gem">
+
+        <img
+            src="images/Ground_Gem.png"
+            alt="Ground Gem"
+        >
+
+        <div class="item-name">
+            Ground Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ground memory">
+
+        <img
+            src="images/Ground_Memory.png"
+            alt="Ground Memory"
+        >
+
+        <div class="item-name">
+            Ground Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="groundium z">
+
+        <img
+            src="images/Groundium_Z.png"
+            alt="Groundium Z"
+        >
+
+        <div class="item-name">
+            Groundium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="grubby hanky">
+
+        <img
+            src="images/Grubby_Hanky.png"
+            alt="Grubby Hanky"
+        >
+
+        <div class="item-name">
+            Grubby Hanky
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="gyaradosite">
+
+        <img
+            src="images/Gyaradosite.png"
+            alt="Gyaradosite"
+        >
+
+        <div class="item-name">
+            Gyaradosite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="hard stone">
+
+        <img
+            src="images/Hard_Stone.png"
+            alt="Hard Stone"
+        >
+
+        <div class="item-name">
+            Hard Stone
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="heat rock">
+
+        <img
+            src="images/Heat_Rock.png"
+            alt="Heat Rock"
+        >
+
+        <div class="item-name">
+            Heat Rock
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="heavy-duty boots">
+
+        <img
+            src="images/Heavy-Duty_Boots.png"
+            alt="Heavy-Duty Boots"
+        >
+
+        <div class="item-name">
+            Heavy-Duty Boots
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="heracronite">
+
+        <img
+            src="images/Heracronite.png"
+            alt="Heracronite"
+        >
+
+        <div class="item-name">
+            Heracronite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="hi-tech earbuds">
+
+        <img
+            src="images/Hi-tech_Earbuds.png"
+            alt="Hi-tech Earbuds"
+        >
+
+        <div class="item-name">
+            Hi-tech Earbuds
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="honor of kalos">
+
+        <img
+            src="images/Honor_Of_Kalos.png"
+            alt="Honor Of Kalos"
+        >
+
+        <div class="item-name">
+            Honor Of Kalos
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="houndoominite">
+
+        <img
+            src="images/Houndoominite.png"
+            alt="Houndoominite"
+        >
+
+        <div class="item-name">
+            Houndoominite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ice gem">
+
+        <img
+            src="images/Ice_Gem.png"
+            alt="Ice Gem"
+        >
+
+        <div class="item-name">
+            Ice Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ice memory">
+
+        <img
+            src="images/Ice_Memory.png"
+            alt="Ice Memory"
+        >
+
+        <div class="item-name">
+            Ice Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="icicle plate">
+
+        <img
+            src="images/Icicle_Plate.png"
+            alt="Icicle Plate"
+        >
+
+        <div class="item-name">
+            Icicle Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="icium z">
+
+        <img
+            src="images/Icium_Z.png"
+            alt="Icium Z"
+        >
+
+        <div class="item-name">
+            Icium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="icy rock">
+
+        <img
+            src="images/Icy_Rock.png"
+            alt="Icy Rock"
+        >
+
+        <div class="item-name">
+            Icy Rock
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="incinium z">
+
+        <img
+            src="images/Incinium_Z.png"
+            alt="Incinium Z"
+        >
+
+        <div class="item-name">
+            Incinium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="insect plate">
+
+        <img
+            src="images/Insect_Plate.png"
+            alt="Insect Plate"
+        >
+
+        <div class="item-name">
+            Insect Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="intriguing stone">
+
+        <img
+            src="images/Intriguing_Stone.png"
+            alt="Intriguing Stone"
+        >
+
+        <div class="item-name">
+            Intriguing Stone
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="iron ball">
+
+        <img
+            src="images/Iron_Ball.png"
+            alt="Iron Ball"
+        >
+
+        <div class="item-name">
+            Iron Ball
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="iron plate">
+
+        <img
+            src="images/Iron_Plate.png"
+            alt="Iron Plate"
+        >
+
+        <div class="item-name">
+            Iron Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="kangaskhanite">
+
+        <img
+            src="images/Kangaskhanite.png"
+            alt="Kangaskhanite"
+        >
+
+        <div class="item-name">
+            Kangaskhanite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="king's rock">
+
+        <img
+            src="images/King's_Rock.png"
+            alt="King's Rock"
+        >
+
+        <div class="item-name">
+            King's Rock
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="kommonium z">
+
+        <img
+            src="images/Kommonium_Z.png"
+            alt="Kommonium Z"
+        >
+
+        <div class="item-name">
+            Kommonium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lagging tail">
+
+        <img
+            src="images/Lagging_Tail.png"
+            alt="Lagging Tail"
+        >
+
+        <div class="item-name">
+            Lagging Tail
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="latiasite">
+
+        <img
+            src="images/Latiasite.png"
+            alt="Latiasite"
+        >
+
+        <div class="item-name">
+            Latiasite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="latiosite">
+
+        <img
+            src="images/Latiosite.png"
+            alt="Latiosite"
+        >
+
+        <div class="item-name">
+            Latiosite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lax incense">
+
+        <img
+            src="images/Lax_Incense.png"
+            alt="Lax Incense"
+        >
+
+        <div class="item-name">
+            Lax Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="leftovers">
+
+        <img
+            src="images/Leftovers.png"
+            alt="Leftovers"
+        >
+
+        <div class="item-name">
+            Leftovers
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="legend plate">
+
+        <img
+            src="images/Legend_Plate.png"
+            alt="Legend Plate"
+        >
+
+        <div class="item-name">
+            Legend Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="life orb">
+
+        <img
+            src="images/Life_Orb.png"
+            alt="Life Orb"
+        >
+
+        <div class="item-name">
+            Life Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="light ball">
+
+        <img
+            src="images/Light_Ball.png"
+            alt="Light Ball"
+        >
+
+        <div class="item-name">
+            Light Ball
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="light clay">
+
+        <img
+            src="images/Light_Clay.png"
+            alt="Light Clay"
+        >
+
+        <div class="item-name">
+            Light Clay
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="loaded dice">
+
+        <img
+            src="images/Loaded_Dice.png"
+            alt="Loaded Dice"
+        >
+
+        <div class="item-name">
+            Loaded Dice
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="looker ticket">
+
+        <img
+            src="images/Looker_Ticket.png"
+            alt="Looker Ticket"
+        >
+
+        <div class="item-name">
+            Looker Ticket
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lopunnite">
+
+        <img
+            src="images/Lopunnite.png"
+            alt="Lopunnite"
+        >
+
+        <div class="item-name">
+            Lopunnite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="love sweet">
+
+        <img
+            src="images/Love_Sweet.png"
+            alt="Love Sweet"
+        >
+
+        <div class="item-name">
+            Love Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lucarionite">
+
+        <img
+            src="images/Lucarionite.png"
+            alt="Lucarionite"
+        >
+
+        <div class="item-name">
+            Lucarionite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="luck incense">
+
+        <img
+            src="images/Luck_Incense.png"
+            alt="Luck Incense"
+        >
+
+        <div class="item-name">
+            Luck Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lucky egg">
+
+        <img
+            src="images/Lucky_Egg.png"
+            alt="Lucky Egg"
+        >
+
+        <div class="item-name">
+            Lucky Egg
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lucky punch">
+
+        <img
+            src="images/Lucky_Punch.png"
+            alt="Lucky Punch"
+        >
+
+        <div class="item-name">
+            Lucky Punch
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="luminous moss">
+
+        <img
+            src="images/Luminous_Moss.png"
+            alt="Luminous Moss"
+        >
+
+        <div class="item-name">
+            Luminous Moss
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lunalium z">
+
+        <img
+            src="images/Lunalium_Z.png"
+            alt="Lunalium Z"
+        >
+
+        <div class="item-name">
+            Lunalium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lustrous globe">
+
+        <img
+            src="images/Lustrous_Globe.png"
+            alt="Lustrous Globe"
+        >
+
+        <div class="item-name">
+            Lustrous Globe
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lustrous orb">
+
+        <img
+            src="images/Lustrous_Orb.png"
+            alt="Lustrous Orb"
+        >
+
+        <div class="item-name">
+            Lustrous Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="lycanium z">
+
+        <img
+            src="images/Lycanium_Z.png"
+            alt="Lycanium Z"
+        >
+
+        <div class="item-name">
+            Lycanium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="macho brace">
+
+        <img
+            src="images/Macho_Brace.png"
+            alt="Macho Brace"
+        >
+
+        <div class="item-name">
+            Macho Brace
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="magnet">
+
+        <img
+            src="images/Magnet.png"
+            alt="Magnet"
+        >
+
+        <div class="item-name">
+            Magnet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="manectite">
+
+        <img
+            src="images/Manectite.png"
+            alt="Manectite"
+        >
+
+        <div class="item-name">
+            Manectite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="marshadium z">
+
+        <img
+            src="images/Marshadium_Z.png"
+            alt="Marshadium Z"
+        >
+
+        <div class="item-name">
+            Marshadium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mawilite">
+
+        <img
+            src="images/Mawilite.png"
+            alt="Mawilite"
+        >
+
+        <div class="item-name">
+            Mawilite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="meadow plate">
+
+        <img
+            src="images/Meadow_Plate.png"
+            alt="Meadow Plate"
+        >
+
+        <div class="item-name">
+            Meadow Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="medichamite">
+
+        <img
+            src="images/Medichamite.png"
+            alt="Medichamite"
+        >
+
+        <div class="item-name">
+            Medichamite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mental herb">
+
+        <img
+            src="images/Mental_Herb.png"
+            alt="Mental Herb"
+        >
+
+        <div class="item-name">
+            Mental Herb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="metagrossite">
+
+        <img
+            src="images/Metagrossite.png"
+            alt="Metagrossite"
+        >
+
+        <div class="item-name">
+            Metagrossite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="metal coat">
+
+        <img
+            src="images/Metal_Coat.png"
+            alt="Metal Coat"
+        >
+
+        <div class="item-name">
+            Metal Coat
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="metal powder">
+
+        <img
+            src="images/Metal_Powder.png"
+            alt="Metal Powder"
+        >
+
+        <div class="item-name">
+            Metal Powder
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="metronome">
+
+        <img
+            src="images/Metronome.png"
+            alt="Metronome"
+        >
+
+        <div class="item-name">
+            Metronome
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mewnium z">
+
+        <img
+            src="images/Mewnium_Z.png"
+            alt="Mewnium Z"
+        >
+
+        <div class="item-name">
+            Mewnium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mewtwonite x">
+
+        <img
+            src="images/Mewtwonite_X.png"
+            alt="Mewtwonite X"
+        >
+
+        <div class="item-name">
+            Mewtwonite X
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mewtwonite y">
+
+        <img
+            src="images/Mewtwonite_Y.png"
+            alt="Mewtwonite Y"
+        >
+
+        <div class="item-name">
+            Mewtwonite Y
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mimikium z">
+
+        <img
+            src="images/Mimikium_Z.png"
+            alt="Mimikium Z"
+        >
+
+        <div class="item-name">
+            Mimikium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mind plate">
+
+        <img
+            src="images/Mind_Plate.png"
+            alt="Mind Plate"
+        >
+
+        <div class="item-name">
+            Mind Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="miracle seed">
+
+        <img
+            src="images/Miracle_Seed.png"
+            alt="Miracle Seed"
+        >
+
+        <div class="item-name">
+            Miracle Seed
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mirror herb">
+
+        <img
+            src="images/Mirror_Herb.png"
+            alt="Mirror Herb"
+        >
+
+        <div class="item-name">
+            Mirror Herb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="misty seed">
+
+        <img
+            src="images/Misty_Seed.png"
+            alt="Misty Seed"
+        >
+
+        <div class="item-name">
+            Misty Seed
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="muscle band">
+
+        <img
+            src="images/Muscle_Band.png"
+            alt="Muscle Band"
+        >
+
+        <div class="item-name">
+            Muscle Band
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="mystic water">
+
+        <img
+            src="images/Mystic_Water.png"
+            alt="Mystic Water"
+        >
+
+        <div class="item-name">
+            Mystic Water
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="never-melt ice">
+
+        <img
+            src="images/Never-Melt_Ice.png"
+            alt="Never-Melt Ice"
+        >
+
+        <div class="item-name">
+            Never-Melt Ice
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="normal gem">
+
+        <img
+            src="images/Normal_Gem.png"
+            alt="Normal Gem"
+        >
+
+        <div class="item-name">
+            Normal Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="normalium z">
+
+        <img
+            src="images/Normalium_Z.png"
+            alt="Normalium Z"
+        >
+
+        <div class="item-name">
+            Normalium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="odd incense">
+
+        <img
+            src="images/Odd_Incense.png"
+            alt="Odd Incense"
+        >
+
+        <div class="item-name">
+            Odd Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pass orb">
+
+        <img
+            src="images/Pass_Orb.png"
+            alt="Pass Orb"
+        >
+
+        <div class="item-name">
+            Pass Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pidgeotite">
+
+        <img
+            src="images/Pidgeotite.png"
+            alt="Pidgeotite"
+        >
+
+        <div class="item-name">
+            Pidgeotite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pikanium z">
+
+        <img
+            src="images/Pikanium_Z.png"
+            alt="Pikanium Z"
+        >
+
+        <div class="item-name">
+            Pikanium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pikashunium z">
+
+        <img
+            src="images/Pikashunium_Z.png"
+            alt="Pikashunium Z"
+        >
+
+        <div class="item-name">
+            Pikashunium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pink nectar">
+
+        <img
+            src="images/Pink_Nectar.png"
+            alt="Pink Nectar"
+        >
+
+        <div class="item-name">
+            Pink Nectar
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pinsirite">
+
+        <img
+            src="images/Pinsirite.png"
+            alt="Pinsirite"
+        >
+
+        <div class="item-name">
+            Pinsirite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pixie plate">
+
+        <img
+            src="images/Pixie_Plate.png"
+            alt="Pixie Plate"
+        >
+
+        <div class="item-name">
+            Pixie Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="plasma card">
+
+        <img
+            src="images/Plasma_Card.png"
+            alt="Plasma Card"
+        >
+
+        <div class="item-name">
+            Plasma Card
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="poison barb">
+
+        <img
+            src="images/Poison_Barb.png"
+            alt="Poison Barb"
+        >
+
+        <div class="item-name">
+            Poison Barb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="poison gem">
+
+        <img
+            src="images/Poison_Gem.png"
+            alt="Poison Gem"
+        >
+
+        <div class="item-name">
+            Poison Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="poison memory">
+
+        <img
+            src="images/Poison_Memory.png"
+            alt="Poison Memory"
+        >
+
+        <div class="item-name">
+            Poison Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="poisonium z">
+
+        <img
+            src="images/Poisonium_Z.png"
+            alt="Poisonium Z"
+        >
+
+        <div class="item-name">
+            Poisonium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power anklet">
+
+        <img
+            src="images/Power_Anklet.png"
+            alt="Power Anklet"
+        >
+
+        <div class="item-name">
+            Power Anklet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power band">
+
+        <img
+            src="images/Power_Band.png"
+            alt="Power Band"
+        >
+
+        <div class="item-name">
+            Power Band
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power belt">
+
+        <img
+            src="images/Power_Belt.png"
+            alt="Power Belt"
+        >
+
+        <div class="item-name">
+            Power Belt
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power bracer">
+
+        <img
+            src="images/Power_Bracer.png"
+            alt="Power Bracer"
+        >
+
+        <div class="item-name">
+            Power Bracer
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power herb">
+
+        <img
+            src="images/Power_Herb.png"
+            alt="Power Herb"
+        >
+
+        <div class="item-name">
+            Power Herb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power lens">
+
+        <img
+            src="images/Power_Lens.png"
+            alt="Power Lens"
+        >
+
+        <div class="item-name">
+            Power Lens
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power plant pass">
+
+        <img
+            src="images/Power_Plant_Pass.png"
+            alt="Power Plant Pass"
+        >
+
+        <div class="item-name">
+            Power Plant Pass
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="power weight">
+
+        <img
+            src="images/Power_Weight.png"
+            alt="Power Weight"
+        >
+
+        <div class="item-name">
+            Power Weight
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="primarium z">
+
+        <img
+            src="images/Primarium_Z.png"
+            alt="Primarium Z"
+        >
+
+        <div class="item-name">
+            Primarium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="prison bottle">
+
+        <img
+            src="images/Prison_Bottle.png"
+            alt="Prison Bottle"
+        >
+
+        <div class="item-name">
+            Prison Bottle
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="prof's letter">
+
+        <img
+            src="images/Prof's_Letter.png"
+            alt="Prof's Letter"
+        >
+
+        <div class="item-name">
+            Prof's Letter
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="protective pads">
+
+        <img
+            src="images/Protective_Pads.png"
+            alt="Protective Pads"
+        >
+
+        <div class="item-name">
+            Protective Pads
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="psychic gem">
+
+        <img
+            src="images/Psychic_Gem.png"
+            alt="Psychic Gem"
+        >
+
+        <div class="item-name">
+            Psychic Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="psychic memory">
+
+        <img
+            src="images/Psychic_Memory.png"
+            alt="Psychic Memory"
+        >
+
+        <div class="item-name">
+            Psychic Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="psychic seed">
+
+        <img
+            src="images/Psychic_Seed.png"
+            alt="Psychic Seed"
+        >
+
+        <div class="item-name">
+            Psychic Seed
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="psychium z">
+
+        <img
+            src="images/Psychium_Z.png"
+            alt="Psychium Z"
+        >
+
+        <div class="item-name">
+            Psychium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="pure incense">
+
+        <img
+            src="images/Pure_Incense.png"
+            alt="Pure Incense"
+        >
+
+        <div class="item-name">
+            Pure Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="purple nectar">
+
+        <img
+            src="images/Purple_Nectar.png"
+            alt="Purple Nectar"
+        >
+
+        <div class="item-name">
+            Purple Nectar
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="quick claw">
+
+        <img
+            src="images/Quick_Claw.png"
+            alt="Quick Claw"
+        >
+
+        <div class="item-name">
+            Quick Claw
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="quick powder">
+
+        <img
+            src="images/Quick_Powder.png"
+            alt="Quick Powder"
+        >
+
+        <div class="item-name">
+            Quick Powder
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="razor claw">
+
+        <img
+            src="images/Razor_Claw.png"
+            alt="Razor Claw"
+        >
+
+        <div class="item-name">
+            Razor Claw
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="razor fang">
+
+        <img
+            src="images/Razor_Fang.png"
+            alt="Razor Fang"
+        >
+
+        <div class="item-name">
+            Razor Fang
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="red card">
+
+        <img
+            src="images/Red_Card.png"
+            alt="Red Card"
+        >
+
+        <div class="item-name">
+            Red Card
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="red nectar">
+
+        <img
+            src="images/Red_Nectar.png"
+            alt="Red Nectar"
+        >
+
+        <div class="item-name">
+            Red Nectar
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ribbon sweet">
+
+        <img
+            src="images/Ribbon_Sweet.png"
+            alt="Ribbon Sweet"
+        >
+
+        <div class="item-name">
+            Ribbon Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ring target">
+
+        <img
+            src="images/Ring_Target.png"
+            alt="Ring Target"
+        >
+
+        <div class="item-name">
+            Ring Target
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="rock gem">
+
+        <img
+            src="images/Rock_Gem.png"
+            alt="Rock Gem"
+        >
+
+        <div class="item-name">
+            Rock Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="rock incense">
+
+        <img
+            src="images/Rock_Incense.png"
+            alt="Rock Incense"
+        >
+
+        <div class="item-name">
+            Rock Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="rock memory">
+
+        <img
+            src="images/Rock_Memory.png"
+            alt="Rock Memory"
+        >
+
+        <div class="item-name">
+            Rock Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="rockium z">
+
+        <img
+            src="images/Rockium_Z.png"
+            alt="Rockium Z"
+        >
+
+        <div class="item-name">
+            Rockium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="rocky helmet">
+
+        <img
+            src="images/Rocky_Helmet.png"
+            alt="Rocky Helmet"
+        >
+
+        <div class="item-name">
+            Rocky Helmet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="room service">
+
+        <img
+            src="images/Room_Service.png"
+            alt="Room Service"
+        >
+
+        <div class="item-name">
+            Room Service
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="rose incense">
+
+        <img
+            src="images/Rose_Incense.png"
+            alt="Rose Incense"
+        >
+
+        <div class="item-name">
+            Rose Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sablenite">
+
+        <img
+            src="images/Sablenite.png"
+            alt="Sablenite"
+        >
+
+        <div class="item-name">
+            Sablenite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="safety goggles">
+
+        <img
+            src="images/Safety_Goggles.png"
+            alt="Safety Goggles"
+        >
+
+        <div class="item-name">
+            Safety Goggles
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="salamencite">
+
+        <img
+            src="images/Salamencite.png"
+            alt="Salamencite"
+        >
+
+        <div class="item-name">
+            Salamencite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sceptilite">
+
+        <img
+            src="images/Sceptilite.png"
+            alt="Sceptilite"
+        >
+
+        <div class="item-name">
+            Sceptilite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="scizorite">
+
+        <img
+            src="images/Scizorite.png"
+            alt="Scizorite"
+        >
+
+        <div class="item-name">
+            Scizorite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="scope lens">
+
+        <img
+            src="images/Scope_Lens.png"
+            alt="Scope Lens"
+        >
+
+        <div class="item-name">
+            Scope Lens
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sea incense">
+
+        <img
+            src="images/Sea_Incense.png"
+            alt="Sea Incense"
+        >
+
+        <div class="item-name">
+            Sea Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sharp beak">
+
+        <img
+            src="images/Sharp_Beak.png"
+            alt="Sharp Beak"
+        >
+
+        <div class="item-name">
+            Sharp Beak
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sharpedonite">
+
+        <img
+            src="images/Sharpedonite.png"
+            alt="Sharpedonite"
+        >
+
+        <div class="item-name">
+            Sharpedonite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="shed shell">
+
+        <img
+            src="images/Shed_Shell.png"
+            alt="Shed Shell"
+        >
+
+        <div class="item-name">
+            Shed Shell
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="shell bell">
+
+        <img
+            src="images/Shell_Bell.png"
+            alt="Shell Bell"
+        >
+
+        <div class="item-name">
+            Shell Bell
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="shock drive">
+
+        <img
+            src="images/Shock_Drive.png"
+            alt="Shock Drive"
+        >
+
+        <div class="item-name">
+            Shock Drive
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="silk scarf">
+
+        <img
+            src="images/Silk_Scarf.png"
+            alt="Silk Scarf"
+        >
+
+        <div class="item-name">
+            Silk Scarf
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="silver powder">
+
+        <img
+            src="images/Silver_Powder.png"
+            alt="Silver Powder"
+        >
+
+        <div class="item-name">
+            Silver Powder
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sky plate">
+
+        <img
+            src="images/Sky_Plate.png"
+            alt="Sky Plate"
+        >
+
+        <div class="item-name">
+            Sky Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="slowbronite">
+
+        <img
+            src="images/Slowbronite.png"
+            alt="Slowbronite"
+        >
+
+        <div class="item-name">
+            Slowbronite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="smoke ball">
+
+        <img
+            src="images/Smoke_Ball.png"
+            alt="Smoke Ball"
+        >
+
+        <div class="item-name">
+            Smoke Ball
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="smooth rock">
+
+        <img
+            src="images/Smooth_Rock.png"
+            alt="Smooth Rock"
+        >
+
+        <div class="item-name">
+            Smooth Rock
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="snorlium z">
+
+        <img
+            src="images/Snorlium_Z.png"
+            alt="Snorlium Z"
+        >
+
+        <div class="item-name">
+            Snorlium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="snowball">
+
+        <img
+            src="images/Snowball.png"
+            alt="Snowball"
+        >
+
+        <div class="item-name">
+            Snowball
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="soft sand">
+
+        <img
+            src="images/Soft_Sand.png"
+            alt="Soft Sand"
+        >
+
+        <div class="item-name">
+            Soft Sand
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="solganium z">
+
+        <img
+            src="images/Solganium_Z.png"
+            alt="Solganium Z"
+        >
+
+        <div class="item-name">
+            Solganium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="soothe bell">
+
+        <img
+            src="images/Soothe_Bell.png"
+            alt="Soothe Bell"
+        >
+
+        <div class="item-name">
+            Soothe Bell
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="soul dew">
+
+        <img
+            src="images/Soul_Dew.png"
+            alt="Soul Dew"
+        >
+
+        <div class="item-name">
+            Soul Dew
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="spell tag">
+
+        <img
+            src="images/Spell_Tag.png"
+            alt="Spell Tag"
+        >
+
+        <div class="item-name">
+            Spell Tag
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="splash plate">
+
+        <img
+            src="images/Splash_Plate.png"
+            alt="Splash Plate"
+        >
+
+        <div class="item-name">
+            Splash Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="spooky plate">
+
+        <img
+            src="images/Spooky_Plate.png"
+            alt="Spooky Plate"
+        >
+
+        <div class="item-name">
+            Spooky Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="star sweet">
+
+        <img
+            src="images/Star_Sweet.png"
+            alt="Star Sweet"
+        >
+
+        <div class="item-name">
+            Star Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="steel gem">
+
+        <img
+            src="images/Steel_Gem.png"
+            alt="Steel Gem"
+        >
+
+        <div class="item-name">
+            Steel Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="steel memory">
+
+        <img
+            src="images/Steel_Memory.png"
+            alt="Steel Memory"
+        >
+
+        <div class="item-name">
+            Steel Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="steelium z">
+
+        <img
+            src="images/Steelium_Z.png"
+            alt="Steelium Z"
+        >
+
+        <div class="item-name">
+            Steelium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="steelixite">
+
+        <img
+            src="images/Steelixite.png"
+            alt="Steelixite"
+        >
+
+        <div class="item-name">
+            Steelixite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sticky barb">
+
+        <img
+            src="images/Sticky_Barb.png"
+            alt="Sticky Barb"
+        >
+
+        <div class="item-name">
+            Sticky Barb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="stone plate">
+
+        <img
+            src="images/Stone_Plate.png"
+            alt="Stone Plate"
+        >
+
+        <div class="item-name">
+            Stone Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="strawberry sweet">
+
+        <img
+            src="images/Strawberry_Sweet.png"
+            alt="Strawberry Sweet"
+        >
+
+        <div class="item-name">
+            Strawberry Sweet
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="swampertite">
+
+        <img
+            src="images/Swampertite.png"
+            alt="Swampertite"
+        >
+
+        <div class="item-name">
+            Swampertite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="sweet apple">
+
+        <img
+            src="images/Sweet_Apple.png"
+            alt="Sweet Apple"
+        >
+
+        <div class="item-name">
+            Sweet Apple
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="syrupy apple">
+
+        <img
+            src="images/Syrupy_Apple.png"
+            alt="Syrupy Apple"
+        >
+
+        <div class="item-name">
+            Syrupy Apple
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="tapunium z">
+
+        <img
+            src="images/Tapunium_Z.png"
+            alt="Tapunium Z"
+        >
+
+        <div class="item-name">
+            Tapunium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="tart apple">
+
+        <img
+            src="images/Tart_Apple.png"
+            alt="Tart Apple"
+        >
+
+        <div class="item-name">
+            Tart Apple
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="terrain extender">
+
+        <img
+            src="images/Terrain_Extender.png"
+            alt="Terrain Extender"
+        >
+
+        <div class="item-name">
+            Terrain Extender
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="thick club">
+
+        <img
+            src="images/Thick_Club.png"
+            alt="Thick Club"
+        >
+
+        <div class="item-name">
+            Thick Club
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="throat spray">
+
+        <img
+            src="images/Throat_Spray.png"
+            alt="Throat Spray"
+        >
+
+        <div class="item-name">
+            Throat Spray
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="toxic orb">
+
+        <img
+            src="images/Toxic_Orb.png"
+            alt="Toxic Orb"
+        >
+
+        <div class="item-name">
+            Toxic Orb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="toxic plate">
+
+        <img
+            src="images/Toxic_Plate.png"
+            alt="Toxic Plate"
+        >
+
+        <div class="item-name">
+            Toxic Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="twisted spoon">
+
+        <img
+            src="images/Twisted_Spoon.png"
+            alt="Twisted Spoon"
+        >
+
+        <div class="item-name">
+            Twisted Spoon
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="tyranitarite">
+
+        <img
+            src="images/Tyranitarite.png"
+            alt="Tyranitarite"
+        >
+
+        <div class="item-name">
+            Tyranitarite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="ultranecrozium z">
+
+        <img
+            src="images/Ultranecrozium_Z.png"
+            alt="Ultranecrozium Z"
+        >
+
+        <div class="item-name">
+            Ultranecrozium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="utility umbrella">
+
+        <img
+            src="images/Utility_Umbrella.png"
+            alt="Utility Umbrella"
+        >
+
+        <div class="item-name">
+            Utility Umbrella
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="venusaurite">
+
+        <img
+            src="images/Venusaurite.png"
+            alt="Venusaurite"
+        >
+
+        <div class="item-name">
+            Venusaurite
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="water gem">
+
+        <img
+            src="images/Water_Gem.png"
+            alt="Water Gem"
+        >
+
+        <div class="item-name">
+            Water Gem
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="water memory">
+
+        <img
+            src="images/Water_Memory.png"
+            alt="Water Memory"
+        >
+
+        <div class="item-name">
+            Water Memory
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="waterium z">
+
+        <img
+            src="images/Waterium_Z.png"
+            alt="Waterium Z"
+        >
+
+        <div class="item-name">
+            Waterium Z
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="wave incense">
+
+        <img
+            src="images/Wave_Incense.png"
+            alt="Wave Incense"
+        >
+
+        <div class="item-name">
+            Wave Incense
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="weakness policy">
+
+        <img
+            src="images/Weakness_Policy.png"
+            alt="Weakness Policy"
+        >
+
+        <div class="item-name">
+            Weakness Policy
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="white herb">
+
+        <img
+            src="images/White_Herb.png"
+            alt="White Herb"
+        >
+
+        <div class="item-name">
+            White Herb
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="wide lens">
+
+        <img
+            src="images/Wide_Lens.png"
+            alt="Wide Lens"
+        >
+
+        <div class="item-name">
+            Wide Lens
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="wise glasses">
+
+        <img
+            src="images/Wise_Glasses.png"
+            alt="Wise Glasses"
+        >
+
+        <div class="item-name">
+            Wise Glasses
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="yellow nectar">
+
+        <img
+            src="images/Yellow_Nectar.png"
+            alt="Yellow Nectar"
+        >
+
+        <div class="item-name">
+            Yellow Nectar
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="zap plate">
+
+        <img
+            src="images/Zap_Plate.png"
+            alt="Zap Plate"
+        >
+
+        <div class="item-name">
+            Zap Plate
+        </div>
+
+    </div>
+    
+    <div class="item" data-name="zoom lens">
+
+        <img
+            src="images/Zoom_Lens.png"
+            alt="Zoom Lens"
+        >
+
+        <div class="item-name">
+            Zoom Lens
+        </div>
+
+    </div>
+    
+
+</div>
+
+<script>
+
+function filterItems() {
+
+    const search =
+        document.getElementById("search").value.toLowerCase();
+
+    const items =
+        document.querySelectorAll(".item");
+
+    items.forEach(item => {
+
+        const name =
+            item.getAttribute("data-name");
+
+        if (name.includes(search)) {
+            item.style.display = "";
+        }
+        else {
+            item.style.display = "none";
+        }
+
+    });
+}
+
+</script>
+
+</body>
+</html>
