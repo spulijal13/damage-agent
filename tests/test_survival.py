@@ -95,6 +95,34 @@ class SurvivalTests(unittest.TestCase):
         self.assertEqual(result['full_budget']['total'], 4)
         self.assertEqual(result['full_budget']['reports'], [])
 
+    def test_calculator_style_damage_rolls_and_champions_units(self):
+        result = optimize_survival({
+            'name': 'Lycanroc-Dusk',
+            'defender': {'spread': {'hp': 0, 'def': 0, 'spd': 0}},
+            'threats': [{'attacker': {'name': 'Charizard-Mega-Y', 'nature': 'Modest',
+                                     'spread': {'spa': 11}}, 'move': 'Solar Beam'}],
+        })
+        report = result['fallback']['reports'][0]
+        expected = [222, 224, 226, 230, 232, 234, 238, 240,
+                    242, 246, 248, 250, 254, 256, 258, 262]
+        self.assertEqual(report['damage_rolls'], expected)
+        summary = format_survival_summary(result)
+        self.assertIn('11+ SpA Charizard-Mega-Y Solar Beam vs. 0 HP / 0 SpD '
+                      'Lycanroc-Dusk: 222-262 (148 - 174.6%) -- guaranteed OHKO', summary)
+        self.assertIn('Possible damage amounts: (' + ', '.join(map(str, expected)) + ')', summary)
+        self.assertIn('Possible damage percentages: (148%, 149.3%', summary)
+
+    def test_damage_percent_uses_max_hp_while_ko_uses_starting_hp(self):
+        result = optimize_survival({
+            'name': 'Magikarp',
+            'defender': {'current_hp_percent': 53, 'spread': {'hp': 0, 'def': 0, 'spd': 0}},
+            'threats': [{'attacker': {'name': 'Dragonite'}, 'move': 'Seismic Toss'}],
+        })
+        summary = format_survival_summary(result)
+        self.assertIn('guaranteed OHKO from 50/95 starting HP', summary)
+        self.assertIn('Possible damage amounts: (50)', summary)
+        self.assertIn('Possible damage percentages: (52.6%)', summary)
+
     def test_nature_changes_defense_and_damage(self):
         bulk = {'name': 'Primarina', 'defender': {'spread': {'hp': 0, 'def': 0, 'spd': 0}},
                 'threats': [{'attacker': {'name': 'Sneasler'}, 'move': 'Dire Claw'}]}

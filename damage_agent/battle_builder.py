@@ -416,9 +416,23 @@ def format_survival_summary(result):
     if shown:
         stats = shown['stats']
         lines.append(f"Stats: {stats['hp']} HP · {stats['def']} Def · {stats['spd']} SpD")
+        if shown['reports']:
+            lines.append('Damage on the first use (% of maximum HP; investments shown in Champions points):')
         for report in shown['reports']:
-            lines.append(f"**{report['attacker']} — {report['move']}**\n"
-                         f"{report['min_damage']}–{report['max_damage']} damage on the first use · "
+            ko_text = 'cannot KO within 3 uses'
+            for uses, chance in enumerate(report['ko'], 1):
+                if chance > 0:
+                    label = 'OHKO' if uses == 1 else f'{uses}HKO'
+                    ko_text = (f'guaranteed {label}' if chance == 1
+                               else f'{100*chance:.2f}% chance to {label}')
+                    break
+            if report['starting_hp'] != stats['hp']:
+                ko_text += f" from {report['starting_hp']}/{stats['hp']} starting HP"
+            rolls = report['damage_rolls']
+            percentages = ', '.join(f'{math.floor(1000*d/stats["hp"])/10:g}%' for d in rolls)
+            lines.append(f"{report['damage_description']} -- {ko_text}\n"
+                         f"Possible damage amounts: ({', '.join(map(str, rolls))})\n"
+                         f"Possible damage percentages: ({percentages})\n"
                          f"**{100*report['survival_probability']:.2f}% survive {report['hits']} use(s)**\n"
                          f"KO by 1 / 2 / 3 uses: " + ' / '.join(f'{100*p:.2f}%' for p in report['ko']))
     minimum = result['minimum']

@@ -3,6 +3,7 @@ const $ = id => document.getElementById(id);
 let chats = [], current = null, selected = null, selectionVersion = 0, creating = false;
 const drafts = new Map(), pending = new Map(), errors = new Map();
 let renameTarget = null, deleteTarget = null;
+let finishReveal = null;
 
 async function api(path = '', method = 'GET', body) {
   const response = await fetch(`/api/chats${path}`, {
@@ -116,7 +117,57 @@ function appendAnswer(container, content) {
     } else appendInline(container, lines[i] + (i < lines.length - 1 ? '\n' : ''));
   }
 }
-function message(role, content, waiting = false) {
+// Reveal already-calculated answers without exposing partial Markdown or JSON.
+// Tables and interactive widgets appear whole when their place in the answer is reached.
+function revealAnswer(body, article) {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const steps = [];
+  for (const node of [...body.childNodes]) {
+    if (node.nodeType === Node.TEXT_NODE || node.nodeName === 'STRONG') {
+      const text = node.textContent;
+      const target = node.nodeType === Node.TEXT_NODE ? node : node.firstChild;
+      if (!target) continue;
+      target.textContent = '';
+      for (const word of text.match(/\S+\s*|\s+/g) || []) {
+        steps.push(() => { target.textContent += word; });
+      }
+    } else {
+      node.hidden = true;
+      steps.push(() => { node.hidden = false; });
+    }
+  }
+  if (!steps.length) return;
+  body.setAttribute('aria-busy', 'true');
+  const skip = document.createElement('button');
+  skip.type = 'button'; skip.className = 'show-answer'; skip.textContent = 'Show full answer';
+  article.append(skip);
+  let position = 0, timer;
+  const scroller = $('messages');
+  const nearBottom = () => scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight < 80;
+  function advance(count) {
+    const follow = nearBottom();
+    for (let n = 0; n < count && position < steps.length; n++) steps[position++]();
+    if (follow) scroller.scrollTop = scroller.scrollHeight;
+  }
+  function finish() {
+    clearInterval(timer);
+    advance(steps.length - position);
+    body.removeAttribute('aria-busy');
+    if (document.activeElement === skip) $('question').focus();
+    skip.remove();
+    if (finishReveal === finish) finishReveal = null;
+  }
+  finishReveal = finish;
+  skip.onclick = finish;
+  // One word per beat for ordinary answers; keep very long answers under 20 seconds.
+  const batch = Math.max(1, Math.ceil(steps.length / 400));
+  advance(batch);
+  timer = setInterval(() => {
+    advance(batch);
+    if (position === steps.length) finish();
+  }, 50);
+}
+function message(role, content, waiting = false, reveal = false) {
   const article = document.createElement('article');
   article.className = `message ${role}${waiting ? ' pending' : ''}`;
   const label = document.createElement('div'); label.className = 'message-label';
@@ -126,15 +177,19 @@ function message(role, content, waiting = false) {
   if (role === 'assistant') appendAnswer(body, content);
   else body.textContent = content;
   article.append(label, body); $('messages').append(article);
+  if (reveal && role === 'assistant') revealAnswer(body, article);
 }
-function render() {
+function render(revealMessageId = null) {
+  if (finishReveal) finishReveal();
   $('chat-title').textContent = current?.title || (selected ? 'Loading chat…' : 'New chat');
   $('question').disabled = creating || (selected !== null && !current);
   $('send').disabled = creating || (selected !== null && !current) || pending.has(selected);
   $('send').textContent = pending.has(selected) ? 'Working…' : 'Send ↑';
   $('notice').textContent = errors.get(selected) || '';
   $('messages').replaceChildren();
-  for (const item of current?.messages || []) message(item.role, item.content);
+  for (const item of current?.messages || []) {
+    message(item.role, item.content, false, item.id === revealMessageId);
+  }
   if (pending.has(selected)) {
     message('user', pending.get(selected));
     message('assistant', 'Calculating…', true);
@@ -198,10 +253,14 @@ $('composer').onsubmit = async event => {
     creating = false; $('new-chat').disabled = false;
   }
   const id = selected, revision = current.revision;
+  let revealMessageId = null;
   drafts.set(id, ''); $('question').value = ''; errors.delete(id); pending.set(id, question); render();
   try {
     const chat = await api(`/${id}/messages`, 'POST', {content: question, revision});
-    if (selected === id) current = chat;
+    if (selected === id) {
+      current = chat;
+      revealMessageId = chat.messages.at(-1)?.id;
+    }
   } catch (error) {
     errors.set(id, error.message);
     if (!drafts.get(id)) drafts.set(id, question);
@@ -212,7 +271,7 @@ $('composer').onsubmit = async event => {
   } finally {
     pending.delete(id);
     try { await refreshList(); } catch (error) { errors.set(selected, error.message); }
-    render();
+    render(selected === id ? revealMessageId : null);
   }
 };
 $('question').oninput = () => drafts.set(selected, $('question').value);

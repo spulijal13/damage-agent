@@ -52,6 +52,7 @@ h1 { display: flex; font-size: 22px; font-weight: 600; letter-spacing: -.6px; ma
 .message-table tr:last-child td { border-bottom: 0; }
 .message.user { margin-left: 10%; padding: 16px 20px; border: 1px solid var(--line); border-radius: 12px; background: #171b20; }
 .message.pending { color: #9eaabc; }
+.show-answer { margin-top: 12px; padding: 6px 10px; color: var(--muted); background: transparent; }
 #composer { padding: 16px 28px 12px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 10px; border-top: 1px solid #2b3038; }
 textarea { resize: vertical; min-height: 70px; max-height: 200px; }
 #send, #new-chat, #rename-form button[type="submit"] { background: var(--accent); border-color: var(--accent); color: #321719; font-weight: 650; }

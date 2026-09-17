@@ -61,7 +61,7 @@ function optimize(input, prepareBattle) {
       const first=rollsAt(hp), survival=1-ko[hits-1];
       return {attacker:battle.attacker.name,move:battle.move.name,hits,ko,
         survival_probability:survival,survives:survival>=chance,
-        min_damage:Math.min(...first),max_damage:Math.max(...first),max_rolls:maxRolls,
+        min_damage:Math.min(...first),max_damage:Math.max(...first),damage_rolls:first,max_rolls:maxRolls,
         starting_hp:hp,remaining_hp:Math.max(0,worstHP)};
     });
     const stats={hp:defender.maxHP(),def:defender.rawStats.def,spd:defender.rawStats.spd};
@@ -86,6 +86,21 @@ function optimize(input, prepareBattle) {
           threats:c.reports.map(r=>({ko:r.ko,range:[r.min_damage,r.max_damage],hp:r.starting_hp}))});
       }
     }
+  }
+  // Describe only retained recommendations, not every heatmap candidate.
+  for (const candidate of new Set([minimum,full,reference,fallback,...individual].filter(Boolean))) {
+    candidate.reports.forEach((report,index)=>{
+      const battle=templates[index];
+      const defender=new Pokemon(gen,base.name,{...(input.defender || input.battles[0].defender),
+        evs:{...base.evs,hp:ev(candidate.points[0]),def:ev(candidate.points[1]),spd:ev(candidate.points[2])},
+        curHP:report.starting_hp});
+      const result=calculate(gen,battle.attacker,defender,battle.move,battle.field);
+      // Smogon's KO text includes residual/recovery mechanics that this planner
+      // excludes. Use our propagated probabilities for the KO wording instead.
+      report.damage_description=result.fullDesc('%',false).split(' -- ')[0]
+        .replace(/\b(\d+)([+-]?) (HP|Atk|Def|SpA|SpD|Spe)\b/g,
+          (_,value,nature,stat)=>`${Number(value) ? (Number(value)+4)/8 : 0}${nature} ${stat}`);
+    });
   }
   return {minimum,full_budget:full,reference,fallback,individual,cells};
 }
