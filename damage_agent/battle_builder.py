@@ -399,6 +399,19 @@ def format_survival_summary(result):
     def spread(c):
         return ' / '.join(f'{value} {label}' for value, label in zip(c['points'], ('HP', 'Def', 'SpD')))
 
+    def pokemon_summary(pokemon, points=None):
+        investments = {k: (v + 4) // 8 if v else 0 for k, v in pokemon['evs'].items()}
+        if points is not None:
+            investments.update(zip(('hp', 'def', 'spd'), points))
+        investment = ' / '.join(f'{v} {STAT_LABELS[k]}' for k, v in investments.items() if v) or '0'
+        settings = [f"{pokemon['name']}: HP: {pokemon['current_hp_percent']}%",
+                    f"Nature: {pokemon['nature']}", f"Ability: {pokemon.get('ability') or 'Default'}",
+                    f"Item: {pokemon.get('item') or 'None'}", f"Spread: {investment} points"]
+        if pokemon.get('status'):
+            settings.append(f"Status: {pokemon['status']}")
+        settings += [f'{STAT_LABELS[k]}: {v:+d}' for k, v in pokemon['boosts'].items() if v]
+        return ' · '.join(settings)
+
     budget_mode = result['goal'] == 'budget'
     chosen = result['full_budget'] if budget_mode else result['minimum']
     shown = chosen or result['fallback']
@@ -416,6 +429,13 @@ def format_survival_summary(result):
     if shown:
         stats = shown['stats']
         lines.append(f"Stats: {stats['hp']} HP · {stats['def']} Def · {stats['spd']} SpD")
+    lines.append(pokemon_summary(defender, shown['points'] if shown else None))
+    for battle in result['battles']:
+        lines.append(pokemon_summary(battle['attacker']))
+        effects = [f'{k}: {v}' for k, v in battle['field'].items() if v and k != 'is_double_battle']
+        if effects:
+            lines.append(f"{battle['attacker']['name']} field: " + ' · '.join(effects))
+    if shown:
         if shown['reports']:
             lines.append('Damage on the first use (% of maximum HP; investments shown in Champions points):')
         for report in shown['reports']:
@@ -438,20 +458,14 @@ def format_survival_summary(result):
     minimum = result['minimum']
     if budget_mode and minimum and (not chosen or minimum['points'] != chosen['points']):
         lines.append(f"Cheapest alternative: **{spread(minimum)}** · {minimum['total']} points")
-    lines.append(f"Ability: {defender.get('ability') or 'Default'} · Item: {defender.get('item') or 'None'} · "
-                 f"Starting HP: {defender['current_hp_percent']}%")
-    for battle in result['battles']:
-        a, field = battle['attacker'], battle['field']
-        investment = ', '.join(f'{(v+4)//8} {STAT_LABELS[k]}' for k,v in a['evs'].items() if v) or '0'
-        settings = [a['name'], a['nature'], investment + ' points', a.get('ability') or 'Default ability',
-                    a.get('item') or 'No item', f"{a['current_hp_percent']}% HP",
-                    'Singles' if field.get('is_double_battle') is False else 'Doubles']
-        settings += [f'{k}: {v}' for k,v in field.items() if v and k != 'is_double_battle']
-        for role, pokemon in [('Attacker', a), ('Defender', defender)]:
-            if pokemon.get('status'): settings.append(f"{role} status: {pokemon['status']}")
-            settings += [f'{role} {STAT_LABELS[k]} {v:+d}' for k,v in pokemon['boosts'].items() if v]
-        lines.append(' · '.join(settings))
-    lines.append('Level 50; nature included. Odds assume each attack lands, fixed attacker/field, '
+    formats = ['singles' if b['field'].get('is_double_battle') is False else 'doubles'
+               for b in result['battles']]
+    if len(set(formats)) > 1:
+        calculation = 'Calculated in ' + ', '.join(
+            f"{mode} for {b['attacker']['name']} ({b['move']})" for b, mode in zip(result['battles'], formats))
+    else:
+        calculation = f'Calculated in {formats[0]}' if formats else ''
+    lines.append('Level 50' + (f' · {calculation}' if calculation else '') + '. Odds assume each attack lands, fixed attacker/field, '
                  'and no healing, residual damage, or other between-use effects. Threats are checked separately.')
     if result['cells'] and result['battles']:
         # Stored with the message, rendered locally; never sent back as LLM context.
