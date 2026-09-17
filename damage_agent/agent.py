@@ -9,7 +9,7 @@ from damage_agent.battle_builder import (
     STAT_KEYS, BOOST_KEYS, format_battle_summary,
     ensure_default_doubles,
     validate_damage_slots,
-    optimize_bulk, format_bulk_summary,
+    optimize_bulk, optimize_survival, format_bulk_summary,
 )
 from damage_agent.showdown_bridge import run_showdown_calc, explain_showdown_damage
 
@@ -113,6 +113,24 @@ DAMAGE_SLOT_SCHEMA = {
     "required": ["mode"],
 }
 
+# Survival requests share the same Pokémon and field slots as damage requests.
+DAMAGE_SLOT_SCHEMA['properties']['bulk']['properties'].update({
+    'survival': {'type': 'BOOLEAN', 'nullable': True},
+    'goal': {'type': 'STRING', 'enum': ['minimum', 'budget'], 'nullable': True},
+    'survival_percent': {'type': 'NUMBER', 'nullable': True},
+    'hits': {'type': 'INTEGER', 'nullable': True},
+    'defender': POKEMON_SLOT_SCHEMA,
+    'threats': {
+        'type': 'ARRAY', 'nullable': True,
+        'items': {'type': 'OBJECT', 'properties': {
+            'attacker': POKEMON_SLOT_SCHEMA,
+            'move': {'type': 'STRING'},
+            'hits': {'type': 'INTEGER', 'nullable': True},
+            'field': DAMAGE_SLOT_SCHEMA['properties']['field'],
+        }},
+    },
+})
+
 SYSTEM_PROMPT = """
 You extract slots for a Pokemon damage-roll calculator.
 Do not calculate damage. Do not convert stat points to EVs.
@@ -123,7 +141,8 @@ Modes:
 - chat: greeting or unrelated. Set message.
 - clarify: damage question missing attacker, defender, or move. Set message.
 - damage: fill attacker, defender, move, and any mentioned spreads.
-- bulk: optimize weighted HP/Defense/Sp. Defense investment. Fill bulk slots.
+- bulk: optimize defensive investment. Fill bulk slots. For a normal budget
+  request set bulk.goal=budget; for explicit B-range tables leave goal omitted.
 
 Weighted bulk optimization:
 - Extract only; Python minimizes (B/(base Def+20+y) + 1/(base SpD+20+z))/(base HP+75+x).
@@ -132,7 +151,8 @@ Weighted bulk optimization:
   and T if missing; keep partial bulk slots in clarify responses.
 - bulk.bias: B, the nonnegative physical-to-special weight. Omit if unspecified
   (Python defaults to 1). Balanced means B=1; twice as physical means B=2.
-  If the user just says more physical/special without a number, ask for B.
+  Physical focus / more physical means B=2; special focus means B=0.5.
+  Never ask the user to know the formula or B.
 - bulk.show_ranges: true for B ranges, breakpoints, all weightings, or a table like
   the reference; false for just the optimum at one B. Never calculate spreads or
   breakpoints yourself. Do not require an attacker or move for bulk optimization.
@@ -140,8 +160,37 @@ Weighted bulk optimization:
   T between 0 and 66. Extract any requested bulk.nature; do not silently ignore it.
 - bulk.base_stats: only explicitly supplied BASE HP/Defense/Sp. Defense values
   (hp, def, spd). Never invent overrides or copy calculated stats into them.
-- This does not optimize survival against specific attacks. Clarify such requests
-  rather than treating a stat-bulk score as proof of survival.
+Survival optimization (also bulk mode):
+- Set bulk.survival true when asked to optimize defensive points to survive attacks.
+- bulk.name is the defending Pokemon. Set bulk.goal to minimum for the fewest
+  points needed; no budget is required then. Set goal to budget when the user has
+  T points to spend or asks for the best bulk within a budget; extract total_points.
+  Budget mode can work without threats (general nature-adjusted weighted bulk).
+  Ask for a budget only in budget mode. Preserve the goal on follow-ups.
+- survival_percent: requested chance of surviving the selected number of uses,
+  from >0 to 100; default 100. "At most 5% chance to be 2HKO'd" means hits=2,
+  survival_percent=95. "Guaranteed" means 100. Do not confuse KO and survival odds.
+- A heatmap request with named threats uses bulk mode, survival=true; use budget
+  mode if a budget is supplied, otherwise minimum mode. Heatmaps are automatic.
+- bulk.threats lists only attackers and moves named by the user. Never invent key
+  threats. Ask for attacking Pokemon and move if missing, retaining partial slots.
+- Each threat has attacker slots, move, optional field and optional hits override.
+  Put conditions shared by all threats into each threat's field.
+- bulk.hits defaults to 1; 2 means survive two consecutive uses, 3 means three.
+  Avoid a 2HKO means survive two uses; avoid a 3HKO means survive three uses.
+  If wording means being KO'd on a particular use instead, ask for clarification.
+- bulk.defender holds explicitly requested item, ability, nature, status, starting
+  HP, boosts, and fixed spread investments. Do not lock stats unless requested;
+  never copy a previously recommended spread into fixed investments automatically.
+- Use bulk.nature for the defender nature. All ordinary natures are supported for
+  survival and budget mode. Only the legacy B-range table uses the neutral formula.
+- Python minimizes the nature-adjusted weighted bulk score within a budget.
+  In minimum mode it minimizes points first, then weighted bulk. HP benefits both
+  defenses in the formula; it breaks equal-score ties, not overrides the formula. Never calculate damage or recommend spreads yourself.
+- Each threat is tested separately; this is not a sequence of different opponents.
+  Repeated uses assume fixed attacker state/field and no healing, residual damage,
+  recoil or stat changes between uses. Clarify requests requiring those effects.
+- Set survival false and clear bulk.threats for an explicit return to stat-only bulk.
 
 Pokemon slots:
 - name: copy the exact canonical name from the Pokemon names JSON provided below.
@@ -213,10 +262,16 @@ def prepare_damage_request(extraction, user_question, *, conversational=False):
     mode = extraction.get("mode")
     if mode == 'bulk':
         bulk = extraction.get('bulk') or {}
-        if not bulk.get('name') or bulk.get('total_points') is None:
+        survival = bool(bulk.get('survival') or bulk.get('threats') or bulk.get('goal') == 'budget')
+        if survival and not bulk.get('name'):
+            return {'mode': 'clarify', 'message': 'Which Pokémon should survive the named attacks?'}
+        if not survival and (not bulk.get('name') or bulk.get('total_points') is None):
             return {'mode': 'clarify', 'message': 'Which Pokémon and how many total defensive points (T) should I optimize?'}
         try:
-            result = optimize_bulk(bulk['name'], bulk['total_points'],
+            if survival:
+                result = optimize_survival(bulk)
+            else:
+                result = optimize_bulk(bulk['name'], bulk['total_points'],
                                    bulk.get('bias') if bulk.get('bias') is not None else 1,
                                    bulk.get('show_ranges') or False, bulk.get('nature') or 'Serious',
                                    {k: v for k, v in (bulk.get('base_stats') or {}).items() if v is not None})
@@ -252,7 +307,10 @@ def apply_common_corrections(request, user_question=""):
 CONTEXT_TURNS = 6
 CONTEXT_MESSAGE_CHARS = 8000
 
-CLEAR_DEFAULTS = {'move': None, 'bulk.base_stats': {}}
+CLEAR_DEFAULTS = {'move': None, 'bulk.base_stats': {}, 'bulk.threats': [],
+                  'bulk.defender.spread': {}, 'bulk.defender.item': None,
+                  'bulk.defender.ability': None, 'bulk.defender.status': None,
+                  'bulk.defender.boosts': {}, 'bulk.defender.current_hp_percent': 100}
 for role in ('attacker', 'defender'):
     for key, value in {'item': None, 'ability': 'No Ability', 'nature': 'Serious',
                        'status': None, 'current_hp_percent': 100}.items():
@@ -294,15 +352,33 @@ Only the supplied recent messages and current slots are available. If the user
 refers to an older battle or detail absent from both, ask them to restate it; do
 not invent a memory of it.
 For a bulk request, merge the bulk fields independently of damage battle fields.
-Use bulk mode for follow-ups changing B, T, species, nature, or showing ranges in
+Use bulk mode for follow-ups changing focus, survival percentage, hit count, goal,
+budget, B, T, species, nature, or showing ranges in
 an active bulk conversation. Unspecified bulk fields stay unchanged, even when
 the species changes, except base_stats overrides reset on a species change unless
 explicitly supplied again. To return to catalog base stats use clear bulk.base_stats.
+For survival follow-ups, preserve threats and defender settings unless changed.
+When editing or adding a threat, return the complete updated threats list; that
+list replaces the previous list, never merges by index. For a global hits change,
+remove old per-threat hits overrides unless the user explicitly retains them.
+A species change clears bulk.defender settings as well as base-stat overrides.
+Use clear bulk.defender.spread to unlock fixed investments, and clear paths for
+removing a defender item/status/ability or resetting its HP/boosts.
 B=0 and show_ranges=false are explicit values to preserve.
 Use damage mode when the user returns to an attack calculation; do not apply an
 optimized spread to a damage battle unless the user explicitly asks for it.
 Chat context JSON:
 ''' + json.dumps(state, ensure_ascii=False)
+
+
+def merge_nonnull(target, changes):
+    for key, value in changes.items():
+        if value is None:
+            continue
+        if isinstance(value, dict):
+            merge_nonnull(target.setdefault(key, {}), value)
+        else:
+            target[key] = deepcopy(value)
 
 
 def merge_slots(previous, patch):
@@ -312,15 +388,19 @@ def merge_slots(previous, patch):
         if not isinstance(changes, dict):
             continue
         current = result.setdefault(role, {})
+        if role == 'bulk' and changes.get('hits') is not None and changes.get('threats') is None:
+            for threat in current.get('threats') or []:
+                threat.pop('hits', None)
         if role == 'bulk' and changes.get('name') and changes['name'] != current.get('name'):
             current.pop('base_stats', None)
+            current.pop('defender', None)
         if role in ('attacker', 'defender') and changes.get('name') and changes['name'] != current.get('name'):
             current = result[role] = {}
         for key, value in changes.items():
             if value is None:
                 continue
             if isinstance(value, dict):
-                current.setdefault(key, {}).update({k: v for k, v in value.items() if v is not None})
+                merge_nonnull(current.setdefault(key, {}), value)
             else:
                 current[key] = value
     if patch.get('move'):
@@ -339,6 +419,7 @@ def merge_slots(previous, patch):
 
 
 def next_state(state, slots, question, answer):
+    answer = answer.split('```bulk-heatmap', 1)[0].strip()
     history = (state or {}).get('history', []) + [
         {'role': 'user', 'content': question[:CONTEXT_MESSAGE_CHARS]},
         {'role': 'assistant', 'content': answer[:CONTEXT_MESSAGE_CHARS]},
@@ -401,7 +482,7 @@ def run_agent():
             mode = battle_request.get("mode")
 
             if mode == 'bulk':
-                print('\n' + format_bulk_summary(battle_request['result']) + '\n')
+                print('\n' + format_bulk_summary(battle_request['result']).split('```bulk-heatmap', 1)[0].strip() + '\n')
                 continue
 
             if mode == "chat":

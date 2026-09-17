@@ -68,20 +68,51 @@ function appendAnswer(container, content) {
   const lines = content.split('\n');
   const cells = line => line.trim().slice(1, -1).split('|').map(cell => cell.trim());
   for (let i = 0; i < lines.length; i++) {
-    if (lines[i].startsWith('| ') && /^\|(?:\s*:?-{3,}:?\s*\|)+\s*$/.test(lines[i + 1] || '')) {
+    if (lines[i] === '```bulk-heatmap') {
+      const payload = [];
+      while (++i < lines.length && lines[i] !== '```') payload.push(lines[i]);
+      try { window.renderBulkHeatmap(container, JSON.parse(payload.join('\n'))); }
+      catch { appendInline(container, 'Heatmap unavailable. Please recalculate.'); }
+    } else if (lines[i].startsWith('| ') && /^\|(?:\s*:?-{3,}:?\s*\|)+\s*$/.test(lines[i + 1] || '')) {
       const wrapper = document.createElement('div'); wrapper.className = 'message-table'; wrapper.tabIndex = 0;
-      wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Bulk optimization ranges');
+      wrapper.setAttribute('role', 'region'); wrapper.setAttribute('aria-label', 'Optimization results');
       const table = document.createElement('table');
       const head = document.createElement('thead'), row = document.createElement('tr');
       cells(lines[i]).forEach(value => { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = value; row.append(cell); });
       head.append(row); table.append(head);
       const body = document.createElement('tbody'); i += 2;
+      const rows = [];
       while (i < lines.length && lines[i].startsWith('| ') && lines[i].trim().endsWith('|')) {
-        const row = document.createElement('tr');
-        cells(lines[i]).forEach(value => { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); });
-        body.append(row); i++;
+        rows.push(cells(lines[i])); i++;
       }
-      i--; table.append(body); wrapper.append(table); container.append(wrapper);
+      i--; table.append(body); wrapper.append(table);
+      let page = 0;
+      const pageSize = 50;
+      const controls = document.createElement('div'); controls.className = 'spread-pages';
+      const previous = document.createElement('button'); previous.type = 'button'; previous.textContent = 'Previous';
+      const next = document.createElement('button'); next.type = 'button'; next.textContent = 'Next';
+      const status = document.createElement('span'); status.setAttribute('aria-live', 'polite');
+      const draw = () => {
+        body.replaceChildren();
+        rows.slice(page * pageSize, (page + 1) * pageSize).forEach(values => {
+          const row = document.createElement('tr');
+          values.forEach(value => { const cell = document.createElement('td'); cell.textContent = value; row.append(cell); });
+          body.append(row);
+        });
+        status.textContent = `${page * pageSize + 1}–${Math.min((page + 1) * pageSize, rows.length)} of ${rows.length}`;
+        previous.disabled = page === 0;
+        next.disabled = (page + 1) * pageSize >= rows.length;
+      };
+      previous.onclick = () => { page--; draw(); };
+      next.onclick = () => { page++; draw(); };
+      if (rows.length > pageSize) {
+        const details = document.createElement('details'); details.className = 'spread-options';
+        const summary = document.createElement('summary'); summary.textContent = `Browse all ${rows.length} spreads`;
+        controls.append(previous, status, next);
+        details.append(summary, wrapper, controls); container.append(details);
+        // Render rows only when the list is opened; history can contain many lists.
+        details.addEventListener('toggle', () => { if (details.open) draw(); });
+      } else { draw(); container.append(wrapper); }
     } else appendInline(container, lines[i] + (i < lines.length - 1 ? '\n' : ''));
   }
 }
@@ -242,3 +273,12 @@ async function init() {
   } catch (error) { errors.set(null, `${error.message} Reload to retry.`); render(); }
 }
 init();
+
+document.querySelectorAll('[data-prompt]').forEach(button => {
+  button.addEventListener('click', () => {
+    const input = document.getElementById('question');
+    input.value = button.dataset.prompt;
+    input.focus();
+    input.dispatchEvent(new Event('input', {bubbles: true}));
+  });
+});

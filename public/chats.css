@@ -75,3 +75,25 @@ dialog footer { display: flex; justify-content: flex-end; gap: 10px; margin-top:
   #composer { padding: 12px; }
   #composer p { font-size: 10px; }
 }
+
+.spread-options { margin: 16px 0; border: 1px solid var(--line); border-radius: 12px; padding: 14px; white-space: normal; }
+.spread-options summary { cursor: pointer; font-weight: 600; font-size: 1rem; }
+.spread-pages { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 12px; font-size: 0.875rem; }
+.spread-pages button:disabled { opacity: 0.4; cursor: default; }
+
+.bulk-map { white-space: normal; margin-top: 20px; border: 1px solid #444; border-radius: 12px; padding: 16px; }
+.bulk-map summary { cursor: pointer; font-weight: 600; }
+.bulk-map-controls { display: flex; gap: 16px; flex-wrap: wrap; margin: 16px 0; }
+.bulk-map select { background: #20242a; color: #fff; padding: 8px; max-width: 100%; }
+.bulk-map p, .bulk-map label { font-size: 14px; line-height: 1.6; }
+.bulk-map-scroll { overflow: auto; max-height: 520px; }
+.bulk-map table { border-collapse: collapse; font-size: 12px; }
+.bulk-map td, .bulk-map th { padding: 2px; }
+.bulk-map button { min-width: 48px; padding: 7px 3px; border-radius: 3px; color: white; font-size: 12px; }
+.bulk-map button:focus-visible { outline: 3px solid white; outline-offset: -3px; }
+.bulk-map .unavailable { background: #252525; text-align: center; color: #888; }
+.bulk-map thead { position: sticky; top: 0; background: #151515; }
+
+.prompt-examples { margin: 0 20px 10px; font-size: 14px; }
+.prompt-examples summary { cursor: pointer; color: #bbb; }
+.prompt-examples button { margin: 8px 6px 0 0; font-size: 14px; }

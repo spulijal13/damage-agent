@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Damage calculator chats</title><link rel="stylesheet" href="/public/chats.css?v=20260915"><script src="/public/chats.js?v=20260915" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Damage calculator chats</title><link rel="stylesheet" href="/public/chats.css?v=20260915"><script src="/public/bulk-heatmap.js" defer></script><script src="/public/chats.js?v=20260915" defer></script></head>
 <body>
 <aside id="sidebar">
   <div class="library-heading"><h2>Chat library</h2><button id="new-chat" type="button">＋ New chat</button></div>
@@ -12,7 +12,13 @@
   <header><button id="toggle-chats" type="button" aria-controls="sidebar" aria-expanded="false">☰ Chats</button><div class="chat-heading"><span class="eyebrow">BATTLE WORKSPACE / 02</span><h1><span id="chat-title">New chat</span><span class="dot">.</span></h1></div></header>
   <div id="notice" role="status"></div>
   <section id="messages" aria-label="Conversation" tabindex="0"></section>
-  <form id="composer"><label class="sr-only" for="question">Message</label><textarea id="question" rows="2" maxlength="8000" placeholder="Ask about a battle, or follow up with a change…" required></textarea><button id="send" type="submit">Send ↑</button><p class="muted">Champions points · Follow-ups remember this chat’s battle · Shift + Enter for a new line</p></form>
+  <details class="prompt-examples"><summary>Example prompts</summary>
+<button type="button" data-prompt="Find the fewest points Primarina needs to survive Sneasler's Dire Claw.">Cheapest survival spread</button>
+<button type="button" data-prompt="I have 40 defensive points for Bold Sylveon. Find the best balanced bulk.">Best bulk within a budget</button>
+<button type="button" data-prompt="Show Mega Charizard Y's heatmap with 50 defensive points against Jolly Life Orb Garchomp's Rock Slide in doubles.">Explore a heatmap</button>
+<button type="button" data-prompt="Now aim for at least 95% survival after two uses.">Change the survival target</button>
+</details>
+<form id="composer"><label class="sr-only" for="question">Message</label><textarea id="question" rows="2" maxlength="8000" placeholder="Ask about a battle, or follow up with a change…" required></textarea><button id="send" type="submit">Send ↑</button><p class="muted">Champions points · Follow-ups remember this chat’s battle · Shift + Enter for a new line</p></form>
 </main>
 <dialog id="rename-dialog"><form id="rename-form"><h2>Rename chat</h2><label for="rename-input">Chat name</label><input id="rename-input" required maxlength="100"><p id="rename-error" role="alert"></p><footer><button type="button" id="cancel-rename">Cancel</button><button type="submit">Save</button></footer></form></dialog>
 <dialog id="delete-dialog"><h2>Delete this chat?</h2><p id="delete-description"></p><p id="delete-error" role="alert"></p><footer><button id="cancel-delete" type="button">Cancel</button><button id="confirm-delete" type="button" class="danger">Delete chat</button></footer></dialog>

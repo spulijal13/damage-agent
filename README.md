@@ -109,7 +109,52 @@ for follow-ups independently of damage battle inputs. The chat renders B-range
 tables; tied optima at the requested B are reported, and table boundaries are
 rounded to four decimals.
 
-## Checks
+## Bulk recommendations and heatmaps
+
+Ask either for the **fewest points to survive** or the **best bulk with a budget**.
+
+Example prompts:
+
+- `Find the fewest points Primarina needs to survive Sneasler's Dire Claw.`
+- `I have 40 defensive points for Bold Sylveon. Find the best balanced bulk.`
+- `With 40 defensive points, optimize Bold Primarina to survive Sneasler's Dire Claw. Show a heatmap.`
+- `Show Mega Charizard Y's heatmap with 50 defensive points against Jolly Life Orb Garchomp's Rock Slide in doubles.`
+- `Now aim for at least 95% survival after two uses.`
+- `Use a special focus instead.`
+- `Find the cheapest spread instead of spending the full budget.`
+
+Each response shows one recommendation, its nature-adjusted stats and survival
+odds. Budget mode also shows the cheapest qualifying alternative. If no spread
+qualifies, the fallback maximizes the weakest matchup's survival probability.
+No giant list of spreads is displayed.
+
+The budget optimizer minimizes `(B/Def + 1/SpD)/HP` using actual level-50 stats.
+Minimum mode minimizes points first, then that score. Higher HP breaks score ties;
+HP is not forced to maximum at the expense of the objective. Balanced focus is
+B=1, physical focus B=2, and special focus B=0.5. Explicit weights remain supported.
+Nature is fixed by the user, defaulting to Serious; it is not automatically changed.
+The legal 66-point total includes fixed offensive/Speed investments.
+
+Expand **Explore KO odds** to select an attack and KO by one, two, or three uses.
+Rows are HP points; columns are Defense points; the remaining displayed budget
+goes to SpD. Gray cells are unavailable. Hover, focus, or tap a cell for the full
+spread, stats, damage range and exact percentage. A star marks the recommendation
+when it uses that map's budget. Minimum mode maps the remaining legal budget;
+its cheaper recommendation is shown separately above. Neighbor comparisons show
+whether swapping one SpD point into Defense changes odds or the damage range.
+
+Probabilities count all rolls, including duplicate damage values, and propagate
+remaining HP between uses. KO means fainted **by** the selected use. Threats start
+independently. All attacks are assumed to land; attacker state and field stay
+fixed, without healing, residual damage, or other between-use effects. This first
+probability version supports single-hit damaging moves only; multi-hit moves,
+Parental Bond, OHKO moves, and selected reactive/consumable defenses are rejected.
+These conditional odds are not a complete battle simulation.
+
+Heatmap data is saved with the chat message and excluded from subsequent model
+context. CLI output shows the text recommendation without the heatmap data.
+
+## Running checks
 
 ```sh
 python3 -B -m unittest discover -s tests -v
