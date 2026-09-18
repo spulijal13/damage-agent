@@ -56,11 +56,8 @@ def gendered_name(name):
 
 def display_name(name):
     name = gendered_name(name) or name
-    for region, adjective in [('Alola', 'Alolan'), ('Galar', 'Galarian'), ('Hisui', 'Hisuian'), ('Paldea', 'Paldean')]:
-        if re.search(rf'-{region}(?=-|$)', name):
-            name = adjective + ' ' + re.sub(rf'-{region}(?=-|$)', '', name)
-            break
-    if '-Mega' in name:
-        base, suffix = name.split('-Mega', 1)
-        name = 'Mega ' + base + suffix.replace('-', ' ')
-    return re.sub(r'-(M|F)(?= |$)', r' - \1', name)
+    base, *suffixes = name.split('-')
+    genders = [part for part in suffixes if part in ('M', 'F')]
+    forms = [part for part in suffixes if part not in ('M', 'F')]
+    species = '-'.join([base, *genders])
+    return f"{' '.join(forms)} {species}" if forms else species

@@ -3,6 +3,7 @@ from damage_agent.artwork import artwork_path
 from damage_agent.pokemon_catalog import display_name, gendered_name
 
 import json
+import hashlib
 import os
 import sqlite3
 import subprocess
@@ -61,6 +62,15 @@ def catalog():
     choices['pokemon'] = []
     for original in _static_catalog()['pokemon']:
         pokemon = dict(original)
+        path = artwork_path(pokemon)
+        if path and path.is_file():
+            stat = path.stat()
+            version = hashlib.sha256(
+                f'{path.relative_to(ROOT)}:{stat.st_mtime_ns}:{stat.st_size}'.encode()
+            ).hexdigest()[:16]
+            pokemon['art_url'] = f"/api/teams/art/{pokemon['id']}?v={version}"
+        else:
+            pokemon['art_url'] = None
         source = pokemon['learnset_id']
         learnset = snapshot['learnsets'].get(source)
         pokemon['has_champions_learnset'] = learnset is not None
