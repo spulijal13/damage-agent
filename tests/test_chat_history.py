@@ -41,6 +41,18 @@ class ChatHistoryTests(unittest.TestCase):
         self.assertEqual(self.client.get(path).status_code, 404)
         self.assertEqual(self.client.get('/').status_code, 200)
 
+    def test_attached_member_survives_send_and_reopen_without_polluting_title(self):
+        chat = chat_api.create_chat()
+        content = '[[pokemon:7]] uses Moonblast\n\n```saved-pokemon\n[{"team_member_id":7,"name":"Primarina","team":"Rain"}]\n```'
+        with patch('frontend.chat_api.answer_question', return_value=('Which opponent?', {})) as answer:
+            response = self.client.post(f"/api/chats/{chat['id']}/messages",
+                                        json={'content': content, 'revision': 0})
+        self.assertEqual(response.status_code, 200)
+        answer.assert_called_once_with(content, {})
+        reopened = chat_api.get_chat(chat['id'])
+        self.assertEqual(reopened['messages'][0]['content'], content)
+        self.assertEqual(reopened['title'], 'Primarina uses Moonblast')
+
     def test_followup_after_reopen_and_separate_chat_context(self):
         first = self.client.post('/api/chats').json()
         second = self.client.post('/api/chats').json()

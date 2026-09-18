@@ -2,6 +2,7 @@
 const $ = id => document.getElementById(id);
 let chats = [], current = null, selected = null, selectionVersion = 0, creating = false;
 const drafts = new Map(), pending = new Map(), errors = new Map();
+const editor = createPokemonEditor($('question'));
 let renameTarget = null, deleteTarget = null;
 let finishReveal = null;
 
@@ -175,16 +176,17 @@ function message(role, content, waiting = false, reveal = false) {
   const body = document.createElement('div'); body.className = 'message-content';
   // Text, emphasis and tables only; model/user content never becomes executable HTML.
   if (role === 'assistant') appendAnswer(body, content);
-  else body.textContent = content;
+  else renderPokemonMessage(body, content);
   article.append(label, body); $('messages').append(article);
   if (reveal && role === 'assistant') revealAnswer(body, article);
 }
 function render(revealMessageId = null) {
   if (finishReveal) finishReveal();
   $('chat-title').textContent = current?.title || (selected ? 'Loading chat…' : 'New chat');
-  $('question').disabled = creating || (selected !== null && !current);
+  $('question').contentEditable = String(!(creating || (selected !== null && !current)));
   $('send').disabled = creating || (selected !== null && !current) || pending.has(selected);
   $('send').textContent = pending.has(selected) ? 'Working…' : 'Send ↑';
+  $('add-pokemon').disabled = creating || (selected !== null && !current);
   $('notice').textContent = errors.get(selected) || '';
   $('messages').replaceChildren();
   for (const item of current?.messages || []) {
@@ -200,7 +202,7 @@ function render(revealMessageId = null) {
     description.textContent = 'Start with an attacker, defender, and move. Then ask follow-ups—each chat remembers its own battle.';
     const example = document.createElement('button'); example.type = 'button';
     example.textContent = 'Sneasler with max attack using Dire Claw into Primarina with max HP';
-    example.onclick = () => { $('question').value = example.textContent; drafts.set(selected, example.textContent); $('question').focus(); };
+    example.onclick = () => { editor.setValue(example.textContent); drafts.set(selected, example.textContent); $('question').focus(); };
     welcome.append(heading, description, example); $('messages').append(welcome);
   }
   renderList();
@@ -210,10 +212,10 @@ function closeSidebar() {
   document.body.classList.remove('show-chats'); $('toggle-chats').setAttribute('aria-expanded', 'false');
 }
 async function selectChat(id) {
-  drafts.set(selected, $('question').value);
+  drafts.set(selected, editor.getValue());
   selected = id; current = null; remember(id);
   const version = ++selectionVersion;
-  $('question').value = drafts.get(id) || '';
+  editor.setValue(drafts.get(id) || '');
   closeSidebar(); render();
   if (!id) return;
   try {
@@ -241,8 +243,10 @@ $('new-chat').onclick = async () => {
 };
 $('composer').onsubmit = async event => {
   event.preventDefault();
-  const question = $('question').value.trim();
+  const question = editor.getValue().trim();
   if (!question || pending.has(selected) || creating || (selected && !current)) return;
+  const content = question;
+  if (content.length > 8000) { errors.set(selected, 'Shorten your message to leave room for the attached Pokémon.'); render(); return; }
   if (!current) {
     creating = true; $('new-chat').disabled = true; render();
     try {
@@ -254,9 +258,9 @@ $('composer').onsubmit = async event => {
   }
   const id = selected, revision = current.revision;
   let revealMessageId = null;
-  drafts.set(id, ''); $('question').value = ''; errors.delete(id); pending.set(id, question); render();
+  drafts.set(id, ''); editor.setValue(''); errors.delete(id); pending.set(id, content); render();
   try {
-    const chat = await api(`/${id}/messages`, 'POST', {content: question, revision});
+    const chat = await api(`/${id}/messages`, 'POST', {content, revision});
     if (selected === id) {
       current = chat;
       revealMessageId = chat.messages.at(-1)?.id;
@@ -264,7 +268,7 @@ $('composer').onsubmit = async event => {
   } catch (error) {
     errors.set(id, error.message);
     if (!drafts.get(id)) drafts.set(id, question);
-    if (selected === id) $('question').value = drafts.get(id);
+    if (selected === id) editor.setValue(drafts.get(id));
     if (error.status === 409) {
       try { const latest = await api(`/${id}`); if (selected === id) current = latest; } catch (_) {}
     }
@@ -274,8 +278,9 @@ $('composer').onsubmit = async event => {
     render(selected === id ? revealMessageId : null);
   }
 };
-$('question').oninput = () => drafts.set(selected, $('question').value);
+$('question').oninput = () => drafts.set(selected, editor.getValue());
 $('question').onkeydown = event => {
+  if (event.target.closest('button')) return;
   if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) { event.preventDefault(); $('composer').requestSubmit(); }
 };
 $('search').oninput = renderList;
@@ -333,10 +338,46 @@ async function init() {
 }
 init();
 
+$('add-pokemon').onclick = async () => {
+  $('saved-team-picker').showModal();
+  $('insert-member').disabled = true;
+  $('saved-member').replaceChildren();
+  $('saved-team-status').textContent = 'Loading saved teams…';
+  try {
+    const response = await fetch('/api/teams');
+    if (!response.ok) throw new Error('Could not load saved teams. Close and reopen to retry.');
+    const teams = await response.json();
+    for (const team of teams) {
+      const group = document.createElement('optgroup'); group.label = team.team_name;
+      for (const member of team.pokemon) {
+        const option = document.createElement('option');
+        option.value = member.pokemon_id;
+        const label = member.display_name || member.name;
+        option.textContent = `${label} · ${member.nature} · ${member.item || 'No item'}`;
+        option.dataset.name = label;
+        option.dataset.team = team.team_name;
+        group.append(option);
+      }
+      if (group.children.length) $('saved-member').append(group);
+    }
+    $('insert-member').disabled = !$('saved-member').options.length;
+    $('saved-team-status').textContent = $('saved-member').options.length ? '' : 'No saved Pokémon yet. Add one in Team builder.';
+  } catch (error) { $('saved-team-status').textContent = error.message; }
+};
+$('cancel-member').onclick = () => $('saved-team-picker').close();
+$('insert-member').onclick = () => {
+  const option = $('saved-member').selectedOptions[0];
+  if (!option) return;
+  const input = $('question');
+  editor.insert({team_member_id: Number(option.value), name: option.dataset.name, team: option.dataset.team});
+  $('saved-team-picker').close();
+  input.focus();
+};
+
 document.querySelectorAll('[data-prompt]').forEach(button => {
   button.addEventListener('click', () => {
     const input = document.getElementById('question');
-    input.value = button.dataset.prompt;
+    editor.setValue(button.dataset.prompt);
     input.focus();
     input.dispatchEvent(new Event('input', {bubbles: true}));
   });

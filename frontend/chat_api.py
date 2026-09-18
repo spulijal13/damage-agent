@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from datetime import datetime, timezone
 import json
 import os
+import re
 from pathlib import Path
 import sqlite3
 from uuid import uuid4
@@ -105,7 +106,16 @@ def save_turn(chat_id, revision, question, answer, state):
         chat = require_chat(db, chat_id)
         if chat['revision'] != revision:
             raise ChatConflict('This chat changed while calculating. Review its latest messages and send again.')
-        name = question[:100] if revision == 0 and chat['title'] == 'New chat' else chat['title']
+        name = chat['title']
+        if revision == 0 and name == 'New chat':
+            text, _, metadata = question.partition('\n\n```saved-pokemon\n')
+            try:
+                members = json.loads(metadata.removesuffix('\n```')) if metadata else []
+                labels = {str(m['team_member_id']): m['name'] for m in members}
+                text = re.sub(r'\[\[pokemon:(\d+)\]\]', lambda m: str(labels.get(m[1], 'Pokémon')), text)
+            except (ValueError, TypeError, KeyError):
+                pass
+            name = text[:100]
         db.execute('UPDATE chats SET title=?, updated_at=?, revision=revision+1, conversation=? WHERE id=?',
                    (name, timestamp, json.dumps(state), chat_id))
         db.executemany('INSERT INTO chat_messages(chat_id, role, content, created_at) VALUES (?, ?, ?, ?)',

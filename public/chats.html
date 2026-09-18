@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="en">
-<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Damage calculator chats</title><link rel="stylesheet" href="/public/chats.css?v=20260915"><script src="/public/bulk-heatmap.js" defer></script><script src="/public/chats.js?v=20260915" defer></script></head>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Damage calculator chats</title><link rel="stylesheet" href="/public/chats.css?v=20260915"><script src="/public/bulk-heatmap.js" defer></script><script src="/public/pokemon-composer.js" defer></script><script src="/public/chats.js?v=20260915" defer></script></head>
 <body>
 <aside id="sidebar">
   <div class="library-heading"><h2>Chat library</h2><button id="new-chat" type="button">＋ New chat</button></div>
@@ -18,7 +18,15 @@
 <button type="button" data-prompt="Show Mega Charizard Y's heatmap with 50 defensive points against Jolly Life Orb Garchomp's Rock Slide in doubles.">Explore a heatmap</button>
 <button type="button" data-prompt="Now aim for at least 95% survival after two uses.">Change the survival target</button>
 </details>
-<form id="composer"><label class="sr-only" for="question">Message</label><textarea id="question" rows="2" maxlength="8000" placeholder="Ask about a battle, or follow up with a change…" required></textarea><button id="send" type="submit">Send ↑</button><p class="muted">Champions points · Follow-ups remember this chat’s battle · Shift + Enter for a new line</p></form>
+<form id="composer">
+<button id="add-pokemon" type="button" aria-label="Add saved Pokémon" title="Add saved Pokémon">＋</button>
+<div class="composer-input"><label class="sr-only" for="question">Message</label><div id="question" contenteditable="true" role="textbox" aria-label="Message" aria-multiline="true" data-placeholder="Ask about a battle, or add Pokémon with ＋…"></div></div>
+<button id="send" type="submit">Send ↑</button><p class="muted">Champions points · Follow-ups remember this chat’s battle · Shift + Enter for a new line</p></form>
+<dialog id="saved-team-picker"><h2>Add a Pokémon</h2>
+<p class="muted">Choose a saved build to use in your question.</p>
+<label for="saved-member">Team Pokémon</label><select id="saved-member"></select>
+<p id="saved-team-status" role="status"></p>
+<footer><button id="cancel-member" type="button">Cancel</button><button id="insert-member" type="button" disabled>Add Pokémon</button></footer></dialog>
 </main>
 <dialog id="rename-dialog"><form id="rename-form"><h2>Rename chat</h2><label for="rename-input">Chat name</label><input id="rename-input" required maxlength="100"><p id="rename-error" role="alert"></p><footer><button type="button" id="cancel-rename">Cancel</button><button type="submit">Save</button></footer></form></dialog>
 <dialog id="delete-dialog"><h2>Delete this chat?</h2><p id="delete-description"></p><p id="delete-error" role="alert"></p><footer><button id="cancel-delete" type="button">Cancel</button><button id="confirm-delete" type="button" class="danger">Delete chat</button></footer></dialog>

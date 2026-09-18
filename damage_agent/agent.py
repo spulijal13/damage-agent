@@ -55,6 +55,8 @@ BOOST_PROPERTIES = {
 POKEMON_SLOT_SCHEMA = {
     "type": "OBJECT",
     "properties": {
+        "team_member_id": {"type": "INTEGER", "nullable": True},
+        "optimize_saved_defenses": {"type": "BOOLEAN", "nullable": True},
         "name": {"type": "STRING", "nullable": True},
         "ability": {"type": "STRING", "nullable": True},
         "item": {"type": "STRING", "nullable": True},
@@ -239,6 +241,9 @@ def parse_damage_slots(user_question, client, conversation=None):
     if conversation is not None:
         prompt += conversation_prompt(conversation)
         schema = conversation_schema(DAMAGE_SLOT_SCHEMA)
+    from damage_agent.team_context import saved_roster, roster_prompt, resolve_team_references
+    roster = saved_roster()
+    prompt += roster_prompt(roster)
 
     response = client.models.generate_content(
         model="gemini-2.5-flash",
@@ -255,7 +260,7 @@ def parse_damage_slots(user_question, client, conversation=None):
     request = json.loads(cleaned)
     if not isinstance(request, dict):
         raise ValueError("Model response must be a JSON object.")
-    return request
+    return resolve_team_references(request, roster)
 
 
 def prepare_damage_request(extraction, user_question, *, conversational=False):
@@ -372,6 +377,10 @@ Chat context JSON:
 
 
 def merge_nonnull(target, changes):
+    if changes.get('_saved_build'):
+        target.clear()
+        target.update(deepcopy({k: v for k, v in changes.items() if k != '_saved_build'}))
+        return
     for key, value in changes.items():
         if value is None:
             continue
@@ -388,6 +397,9 @@ def merge_slots(previous, patch):
         if not isinstance(changes, dict):
             continue
         current = result.setdefault(role, {})
+        if role in ('attacker', 'defender') and changes.get('_saved_build'):
+            result[role] = deepcopy({k: v for k, v in changes.items() if k != '_saved_build'})
+            continue
         if role == 'bulk' and changes.get('hits') is not None and changes.get('threats') is None:
             for threat in current.get('threats') or []:
                 threat.pop('hits', None)

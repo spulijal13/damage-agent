@@ -269,7 +269,21 @@ The default database is `storage/teams.sqlite3`, excluded from Git and outside
 public assets. Set `TEAM_DB_PATH` to override it. Saved teams survive local app
 restarts. Back up this database for recovery. This iteration is a **shared workspace**,
 with no account ownership or private per-user teams; all visitors can edit its teams.
-It does not yet connect saved teams to battle memory or recommendations.
+Saved builds are available to chat and CLI calculations. In chat, open **Use a saved
+Pokémon** using the **＋** button beside the message box, select a member, and attach
+its compact chip inline at your cursor (remove it with **×**), then specify its role,
+move and opponent. You can also refer to a Pokémon by team name, such as
+`My Primarina from Rain offense against Sneasler's Dire Claw`. Ambiguous references
+prompt for clarification. The parser receives a compact snapshot of the shared
+team library (names, member IDs, builds and moves); Python resolves member IDs to
+the exact saved investments, including explicit zeroes. Saved moves help resolve
+named attacks or move-slot references, but a move must still be selected.
+
+Selecting a saved member again loads its latest build. Follow-ups retain the
+loaded snapshot and hypothetical changes without changing the saved team.
+For bulk optimization, ask to reallocate defensive points to unlock saved HP/Def/SpD
+investments while retaining offensive/Speed investments. Unsaved editor changes
+are not available until **Save Pokémon** is clicked.
 
 **Hosted persistence:** the existing free-service `render.yaml` does not provide a
 persistent filesystem. `render.persistent.yaml` is an optional replacement blueprint

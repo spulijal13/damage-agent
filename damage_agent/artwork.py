@@ -4,6 +4,7 @@ from damage_agent.pokemon_catalog import gendered_name
 import re
 import unicodedata
 from functools import lru_cache
+from difflib import SequenceMatcher
 from pathlib import Path
 
 ART_ROOT = Path(__file__).resolve().parents[1] / 'images' / 'pokemon_art'
@@ -28,6 +29,15 @@ def artwork_index():
 
 def artwork_path(pokemon):
     name = pokemon['name']
+    # These forms deliberately share an illustration.
+    if name in ('Meowstic-M-Mega', 'Meowstic-F-Mega'):
+        name = 'Meowstic-M-Mega'
+    elif name in ('Magearna-Mega', 'Magearna-Original-Mega'):
+        name = 'Magearna-Mega'
+    elif name == 'Magearna-Original':
+        name = 'Magearna'
+    elif name == 'Tatsugiri' or name.startswith('Tatsugiri-'):
+        name = 'Tatsugiri-Mega' if name.endswith('-Mega') else 'Tatsugiri'
     aliases = {
         'Cherrim': 'Cherrim Overcast', 'Cherrim-Sunshine': 'Cherrim Sunny',
         'Deerling': 'Deerling Spring', 'Sawsbuck': 'Sawsbuck Spring',
@@ -56,13 +66,18 @@ def artwork_path(pokemon):
         path = artwork_index().get((pokemon['num'], normalized(candidate)))
         if path:
             return path
-    if gender_name:
-        return None  # Never substitute generic/opposite-gender artwork.
-    # Names can differ between the Pokédex and the artwork collection. Prefer
-    # the main species illustration (shallower directory), never another number.
-    same_number = [path for (number, _), path in artwork_index().items()
+    # Prefer the closest form name, never artwork from another Pokédex number.
+    # Main-collection and base-species preferences only break similarity ties.
+    same_number = [(art_name, path) for (number, art_name), path in artwork_index().items()
                    if number == pokemon['num']]
-    return min(same_number, key=lambda path: (
-        'Alternate Versions' in path.parts,
-        len(path.relative_to(ART_ROOT).parts), len(path.stem), str(path),
-    ), default=None)
+    if not same_number:
+        return None
+    normalized_candidates = [normalized(candidate) for candidate in candidates]
+    def rank(entry):
+        art_name, path = entry
+        return (
+            -max(SequenceMatcher(None, candidate, art_name).ratio() for candidate in normalized_candidates),
+            'Alternate Versions' in path.parts,
+            len(path.relative_to(ART_ROOT).parts), len(path.stem), str(path),
+        )
+    return min(same_number, key=rank)[1]

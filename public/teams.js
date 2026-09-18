@@ -18,7 +18,7 @@ function art(container, pokemon) {
   container.replaceChildren();
   const fallback = () => { container.innerHTML = '<span aria-hidden="true">◉</span><small>Artwork coming soon</small>'; };
   if (!pokemon) { fallback(); return; }
-  const names = pokemon.gendered_name ? [pokemon.gendered_name.toLowerCase(), pokemon.gendered_name] : [...new Set([pokemon.id, pokemon.name, String(pokemon.num), String(pokemon.num).padStart(3,'0')])];
+  const names = [...new Set([...(pokemon.gendered_name ? [pokemon.gendered_name.toLowerCase(), pokemon.gendered_name] : []), pokemon.id, pokemon.name, String(pokemon.num), String(pokemon.num).padStart(3,'0')])];
   const urls = [pokemon.art_url, ...names.map(name => `/public/pokemon/${encodeURIComponent(name)}.png`)].filter(Boolean);
   let index = 0;
   const img = new Image();

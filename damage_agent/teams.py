@@ -143,6 +143,8 @@ def list_teams():
         for team in teams:
             team['pokemon'] = [dict(row) for row in db.execute(
                 'SELECT * FROM team_pokemon WHERE team_id=? ORDER BY pokemon_id', (team['team_id'],))]
+            for pokemon in team['pokemon']:
+                pokemon['display_name'] = display_name(pokemon['name'])
         return teams
 
 
