@@ -19,7 +19,8 @@ function optimize(input, prepareBattle) {
   const better = (a,b) => !b || compare(a,b)<0;
   let minimum=null, full=null, reference=null, fallback=null;
   const individual=templates.map(()=>null), cells=[];
-  const ev = p => p ? 8*p-4 : 0;
+  // Generation 0 consumes Champions stat points directly in the `evs` field.
+  const ev = p => p;
   function evaluate(points) {
     const defender = new Pokemon(gen, base.name, {...(input.defender || input.battles[0].defender),
       evs: {...base.evs, hp:ev(points[0]), def:ev(points[1]), spd:ev(points[2])}});

@@ -469,7 +469,8 @@ var SV = (0, util_1.extend)(true, {}, SS, {
         '???': 1
     }
 });
-exports.TYPE_CHART = [{}, RBY, GSC, ADV, DPP, BW, XY, SM, SS, SV];
+var CHAMPIONS = SS;
+exports.TYPE_CHART = [CHAMPIONS, RBY, GSC, ADV, DPP, BW, XY, SM, SS, SV];
 var Types = (function () {
     function Types(gen) {
         this.gen = gen;

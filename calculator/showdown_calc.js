@@ -1,11 +1,42 @@
 const {calculate, Pokemon, Move, Field, Generations} = require("@smogon/calc");
 
+function mergedData(primary, fallback) {
+  return {
+    get(id) { return primary.get(id) || fallback.get(id); },
+    *[Symbol.iterator]() {
+      const seen = new Set();
+      for (const value of primary) { seen.add(value.id); yield value; }
+      for (const value of fallback) if (!seen.has(value.id)) yield value;
+    },
+  };
+}
+
+function championsGeneration() {
+  const champions = Generations.get(0);
+  const standard = Generations.get(9);
+  // The official Champions dataset currently contains the Champions roster,
+  // while this app also accepts other calculator-supported species. Prefer all
+  // Champions data and mechanics, falling back to Gen 9 only for missing data.
+  return {
+    num: 0,
+    abilities: mergedData(champions.abilities, standard.abilities),
+    items: mergedData(champions.items, standard.items),
+    moves: mergedData(champions.moves, standard.moves),
+    species: mergedData(champions.species, standard.species),
+    types: mergedData(champions.types, standard.types),
+    natures: mergedData(champions.natures, standard.natures),
+  };
+}
+
 function clean(obj) {
   return obj || {};
 }
 
 function prepareBattle(input, maximumHits = false) {
-  const gen = Generations.get(input.gen || 9);
+  // Generation 0 is @smogon/calc's Pokémon Champions ruleset. Do not use ||
+  // here because 0 is the intended default rather than a missing value.
+  const generation = input.gen ?? 0;
+  const gen = generation === 0 ? championsGeneration() : Generations.get(generation);
 
   const attackerInput = clean(input.attacker);
   const defenderInput = clean(input.defender);

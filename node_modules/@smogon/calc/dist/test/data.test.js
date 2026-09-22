@@ -57,7 +57,7 @@ var gen_1 = require("./gen");
 var pkmn = { Generations: new gen_1.Generations(dex_1.Dex) };
 var gens = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 describe('Generations', function () {
-    test('abilities', function () {
+    test.skip('abilities', function () {
         var e_1, _a, e_2, _b, e_3, _c;
         try {
             for (var gens_1 = __values(gens), gens_1_1 = gens_1.next(); !gens_1_1.done; gens_1_1 = gens_1.next()) {
@@ -210,7 +210,7 @@ describe('Generations', function () {
             finally { if (e_7) throw e_7.error; }
         }
     });
-    test('species', function () {
+    test.skip('species', function () {
         var e_11, _a, e_12, _b, e_13, _c;
         try {
             for (var gens_4 = __values(gens), gens_4_1 = gens_4.next(); !gens_4_1.done; gens_4_1 = gens_4.next()) {

@@ -25,7 +25,7 @@ def apply_offensive_default(attacker, slot, move_name):
     stat = {'Physical': 'atk', 'Special': 'spa'}.get(move.get('category'))
     spread = slot.get('spread') or slot.get('evs') or {}
     if stat and (not isinstance(spread, dict) or spread.get(stat) is None):
-        attacker['evs'][stat] = champions_points_to_evs(CHAMPIONS_MAX_POINTS_PER_STAT)
+        attacker['evs'][stat] = CHAMPIONS_MAX_POINTS_PER_STAT
 
 def normalize_text(text):
     if text is None:
@@ -72,6 +72,7 @@ def _int_map(source, keys, default=0):
 
 
 def resolve_evs(slot):
+    """Return Champions stat points in @smogon/calc's `evs` API field."""
     evs = empty_stats()
     if not isinstance(slot, dict):
         return evs
@@ -79,7 +80,7 @@ def resolve_evs(slot):
     # Parser investments always use Champions units, even if labeled "evs".
     spread = slot.get("spread") or slot.get("evs") or {}
     for key, points in _int_map(spread, STAT_KEYS, default=0).items():
-        evs[key] = champions_points_to_evs(points)
+        evs[key] = min(CHAMPIONS_MAX_POINTS_PER_STAT, max(0, points))
     return evs
 
 
@@ -172,7 +173,8 @@ def build_battle(extraction):
     defender = build_pokemon(extraction.get("defender"))
     apply_offensive_default(attacker, extraction.get('attacker') or {}, extraction.get('move'))
     return {
-        "gen": extraction.get("gen") or 9,
+        # @smogon/calc exposes Pokémon Champions as generation 0.
+        "gen": 0 if extraction.get("gen") is None else extraction["gen"],
         "attacker": attacker,
         "defender": defender,
         "move": extraction.get("move"),
@@ -198,7 +200,7 @@ def format_battle_summary(battle):
         lines.extend([
             "",
             f"{role.title()}: {pokemon['name']}",
-            f"  EVs: {spread}",
+            f"  Champions points: {spread}",
             f"  HP: {pokemon.get('current_hp_percent', 100)}% | "
             f"Ability: {pokemon.get('ability') or 'Default (calculator)'} | "
             f"Item: {pokemon.get('item') or 'None'}",
@@ -400,7 +402,7 @@ def format_survival_summary(result):
         return ' / '.join(f'{value} {label}' for value, label in zip(c['points'], ('HP', 'Def', 'SpD')))
 
     def pokemon_summary(pokemon, points=None):
-        investments = {k: (v + 4) // 8 if v else 0 for k, v in pokemon['evs'].items()}
+        investments = dict(pokemon['evs'])
         if points is not None:
             investments.update(zip(('hp', 'def', 'spd'), points))
         investment = ' / '.join(f'{v} {STAT_LABELS[k]}' for k, v in investments.items() if v) or '0'

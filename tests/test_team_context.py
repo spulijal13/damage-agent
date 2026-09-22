@@ -22,7 +22,7 @@ class TeamContextTests(unittest.TestCase):
         self.assertIsNone(battle['defender']['status'])
         self.assertEqual(battle['defender']['boosts']['def'], 0)
         self.assertEqual(battle['defender']['evs']['spa'], 0)
-        self.assertEqual(battle['defender']['evs']['hp'], 252)
+        self.assertEqual(battle['defender']['evs']['hp'], 32)
         self.assertEqual(battle['defender']['nature'], 'Bold')
         followup = merge_slots(slots, {'defender': {'spread': {'hp': 11}}})
         self.assertEqual(followup['defender']['spread']['def'], 12)

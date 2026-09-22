@@ -6,9 +6,9 @@ export declare class Move implements State.Move {
     originalName: string;
     ability?: I.AbilityName;
     item?: I.ItemName;
-    species?: I.SpeciesName;
     useZ?: boolean;
-    useMax?: boolean;
+    useMax?: boolean | 'gmax';
+    overrideMove?: I.MoveName;
     overrides?: Partial<I.Move>;
     hits: number;
     timesUsed?: number;
@@ -40,11 +40,11 @@ export declare class Move implements State.Move {
     constructor(gen: I.Generation, name: string, options?: Partial<State.Move> & {
         ability?: I.AbilityName;
         item?: I.ItemName;
-        species?: I.SpeciesName;
+        overrideMove?: I.MoveName;
     });
     named(...names: string[]): boolean;
     hasType(...types: Array<(I.TypeName | undefined)>): boolean;
     clone(): Move;
 }
 export declare function getZMoveName(moveName: string, moveType: I.TypeName, item?: string): string;
-export declare function getMaxMoveName(moveType: I.TypeName, moveName?: string, pokemonSpecies?: string, isStatus?: boolean, pokemonAbility?: string): string;
+export declare function getMaxMoveName(gen: I.Generation, moveType: I.TypeName, moveName?: string, isStatus?: boolean, pokemonAbility?: string, isGmax?: I.MoveName): string;

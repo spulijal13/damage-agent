@@ -103,14 +103,14 @@ class SurvivalTests(unittest.TestCase):
                                      'spread': {'spa': 11}}, 'move': 'Solar Beam'}],
         })
         report = result['fallback']['reports'][0]
-        expected = [222, 224, 226, 230, 232, 234, 238, 240,
-                    242, 246, 248, 250, 254, 256, 258, 262]
+        expected = [306, 310, 314, 318, 322, 324, 328, 332,
+                    336, 340, 342, 346, 350, 354, 358, 362]
         self.assertEqual(report['damage_rolls'], expected)
         summary = format_survival_summary(result)
         self.assertIn('11+ SpA Charizard-Mega-Y Solar Beam vs. 0 HP / 0 SpD '
-                      'Lycanroc-Dusk: 222-262 (148 - 174.6%) -- guaranteed OHKO', summary)
+                      'Lycanroc-Dusk: 306-362 (204 - 241.3%) -- guaranteed OHKO', summary)
         self.assertIn('Possible damage amounts: (' + ', '.join(map(str, expected)) + ')', summary)
-        self.assertIn('Possible damage percentages: (148%, 149.3%', summary)
+        self.assertIn('Possible damage percentages: (204%, 206.6%', summary)
 
     def test_damage_percent_uses_max_hp_while_ko_uses_starting_hp(self):
         result = optimize_survival({

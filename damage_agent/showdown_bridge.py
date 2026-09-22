@@ -7,7 +7,7 @@ CALCULATOR_PATH = Path(__file__).resolve().parents[1] / "calculator" / "showdown
 
 def run_showdown_calc(battle):
     payload = {
-        "gen": battle.get("gen", 9),
+        "gen": battle.get("gen", 0),
         "attacker": battle["attacker"],
         "defender": battle["defender"],
         "move": battle["move"],

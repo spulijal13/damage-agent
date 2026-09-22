@@ -20,8 +20,8 @@ class DamageTests(unittest.TestCase):
         for move, stat in [('Dire Claw', 'atk'), ('Moonblast', 'spa'), ('Psyshock', 'spa')]:
             with self.subTest(move=move):
                 battle = build_battle(self.battle(move))
-                self.assertEqual(battle['attacker']['evs'][stat], 252)
-                self.assertEqual(sum(battle['attacker']['evs'].values()), 252)
+                self.assertEqual(battle['attacker']['evs'][stat], 32)
+                self.assertEqual(sum(battle['attacker']['evs'].values()), 32)
                 self.assertEqual(sum(battle['defender']['evs'].values()), 0)
                 self.assertEqual(battle['attacker']['nature'], 'Serious')
                 self.assertEqual(battle['defender']['nature'], 'Serious')
@@ -33,7 +33,7 @@ class DamageTests(unittest.TestCase):
             slots['attacker'].update(spread={'atk': points}, nature='Adamant')
             slots['defender']['nature'] = 'Bold'
             battle = build_battle(slots)
-            self.assertEqual(battle['attacker']['evs']['atk'], champions_points_to_evs(points))
+            self.assertEqual(battle['attacker']['evs']['atk'], points)
             summary = format_battle_summary(battle)
             self.assertIn('Nature: Adamant', summary)
             self.assertIn('Nature: Bold', summary)
@@ -83,6 +83,22 @@ class DamageTests(unittest.TestCase):
             self.assertLess(run_showdown_calc(battle)["max_damage"], baseline)
         battle["field"] = {"critical": True}
         self.assertGreater(run_showdown_calc(battle)["max_damage"], baseline)
+
+    def test_champions_aura_guard_halves_contact_damage_only(self):
+        slots = self.battle(move='Close Combat', attacker='Lucario', defender='Lucario-Mega-Z')
+        guarded_battle = build_battle(slots)
+        self.assertEqual(guarded_battle['defender']['ability'], 'Aura Guard')
+        guarded = run_showdown_calc(guarded_battle)
+        slots['defender']['ability'] = 'No Ability'
+        unguarded = run_showdown_calc(build_battle(slots))
+        self.assertEqual(guarded['max_damage'], unguarded['max_damage'] // 2)
+
+        slots['move'] = 'Aura Sphere'  # Non-contact special move.
+        slots['defender']['ability'] = 'Aura Guard'
+        guarded = run_showdown_calc(build_battle(slots))
+        slots['defender']['ability'] = 'No Ability'
+        unguarded = run_showdown_calc(build_battle(slots))
+        self.assertEqual(guarded['damage'], unguarded['damage'])
 
     def test_move_name_normalization(self):
         baseline = run_showdown_calc(self.battle("Drain Punch"))
@@ -167,7 +183,7 @@ class DamageTests(unittest.TestCase):
         result = apply_common_corrections({"mode": "damage"}, "damage")
         self.assertEqual(result["mode"], "clarify")
 
-    def test_champions_spread_converts_locally(self):
+    def test_champions_spread_is_passed_directly(self):
         self.assertEqual(champions_points_to_evs(0), 0)
         self.assertEqual(champions_points_to_evs(1), 4)
         self.assertEqual(champions_points_to_evs(14), 108)
@@ -178,18 +194,18 @@ class DamageTests(unittest.TestCase):
             "defender": {"name": "Primarina", "spread": {"hp": 32, "spd": 14}},
             "move": "Dire Claw",
         })
-        self.assertEqual(battle["attacker"]["evs"]["atk"], 252)
-        self.assertEqual(battle["defender"]["evs"]["hp"], 252)
-        self.assertEqual(battle["defender"]["evs"]["spd"], 108)
+        self.assertEqual(battle["attacker"]["evs"]["atk"], 32)
+        self.assertEqual(battle["defender"]["evs"]["hp"], 32)
+        self.assertEqual(battle["defender"]["evs"]["spd"], 14)
         self.assertEqual(battle["defender"]["evs"]["def"], 0)
 
-    def test_evs_label_still_uses_champions_conversion(self):
+    def test_evs_wording_still_means_champions_points(self):
         battle = build_battle({
             "attacker": {"name": "Sneasler", "evs": {"atk": 32}},
             "defender": {"name": "Primarina"},
             "move": "Dire Claw",
         })
-        self.assertEqual(battle["attacker"]["evs"]["atk"], 252)
+        self.assertEqual(battle["attacker"]["evs"]["atk"], 32)
         self.assertEqual(battle["attacker"]["evs"]["hp"], 0)
 
     def test_default_ability_sets_weather(self):

@@ -20,16 +20,16 @@ class ConversationTests(unittest.TestCase):
         self.assertFalse(battle['field']['is_double_battle'])
         self.assertTrue(battle['field']['critical'])
         self.assertEqual(battle['defender']['item'], 'Leftovers')
-        self.assertEqual(battle['attacker']['evs']['atk'], 252)
+        self.assertEqual(battle['attacker']['evs']['atk'], 32)
         self.assertNotIn('critical', self.slots['field'])
 
     def test_move_changes_recompute_only_implicit_offensive_defaults(self):
         slots = {'mode': 'damage', 'attacker': {'name': 'Lucario'}, 'defender': {'name': 'Primarina'}, 'move': 'Close Combat'}
         physical = prepare_damage_request(slots, '', conversational=True)['battle']
-        self.assertEqual(physical['attacker']['evs']['atk'], 252)
+        self.assertEqual(physical['attacker']['evs']['atk'], 32)
         updated = merge_slots(slots, {'move': 'Aura Sphere', 'mode': 'damage'})
         special = prepare_damage_request(updated, '', conversational=True)['battle']
-        self.assertEqual(special['attacker']['evs']['spa'], 252)
+        self.assertEqual(special['attacker']['evs']['spa'], 32)
         self.assertEqual(special['attacker']['evs']['atk'], 0)
         uninvested = merge_slots(updated, {'attacker': {'spread': {'spa': 0}, 'nature': 'Timid'}})
         followup = merge_slots(uninvested, {'field': {'critical': True}})

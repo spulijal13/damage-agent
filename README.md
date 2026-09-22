@@ -35,19 +35,22 @@ The catalog is cached per process: update the Pokédex and restart the CLI to re
 it. Only names are sent to Gemini, not the full stats/abilities dataset; this adds
 prompt tokens to each request. No separate generated data file needs maintaining.
 
-The battle builder defaults to generation 9, level 50, 31 IVs, and a Serious (neutral)
+The battle builder defaults to the Smogon Pokémon Champions ruleset, level 50, 31 IVs, and a Serious (neutral)
 nature for both Pokémon, always displayed in the battle summary. The attacker defaults
 to 32 Champions points in Attack for physical moves or Special Attack for special
 moves, unless that stat was explicitly specified (including zero). Other unspecified
 stats, including the defender's, remain zero. Moves that use neither offensive stat
 (Body Press, Foul Play, fixed-damage and status moves) do not receive this default.
 Defaults are recalculated for the current move on follow-ups, while explicit
-investments and natures persist. Gemini interprets numeric stat investments as Champions points; Python converts them:
-zero maps to zero EVs; positive points map to `8 * points - 4`. Python caps points at 32 per stat. The 66-point total budget is not currently
-validated. All CLI investments use Champions points, even when called EVs:
-"32 HP EVs" means 32 Champions points (252 calculator EVs). The summary and
-Smogon result display converted calculator EVs. This is a generation 9 calculation backend, not a complete
-Champions ruleset implementation.
+investments and natures persist. Gemini interprets numeric stat investments as
+Champions points and Python caps them at 32 per stat. The 66-point total budget is
+not currently validated. All CLI investments use Champions points, even when called
+EVs: "32 HP EVs" means 32 Champions points. These points are passed directly to
+the Champions calculator and displayed as Champions points. Damage uses `@smogon/calc`'s
+generation-0 Champions mechanics, including Champions abilities such as Aura Guard.
+The official Champions dataset currently covers the Champions roster; for species,
+moves, items, and abilities absent from that dataset, the adapter falls back to the
+generation 9 data while retaining Champions mechanics.
 
 Grounding is inferred by Smogon from species, ability, item, and field mechanics.
 Explicit `grounded` overrides are rejected. The CLI prints its parsed battle so
