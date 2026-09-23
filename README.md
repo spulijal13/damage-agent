@@ -176,7 +176,20 @@ python3 -B -m unittest discover -s tests -v
 ```
 
 Tests exercise the local calculator bridge and parser postprocessing without a
-Gemini API key or network calls. Live Gemini parsing is not covered.
+Gemini API key or network calls. Live Gemini parsing is skipped by default.
+
+Boost removal uses an explicit `reset_boosts` action on a Pokémon slot. Python
+consumes the action by resetting all stat stages to zero, then applying any
+explicit individual stage updates. Omitted/null stages remain unchanged; an
+explicit zero clears only that stage. Builds and other battle settings persist.
+The normal suite mocks model interpretation. To additionally evaluate actual
+Gemini parsing of boost-removal requests (including misspellings), run:
+
+```sh
+DAMAGE_AGENT_LIVE_PARSER_TESTS=1 .venv/bin/python -B -m unittest discover -s tests -p test_boost_actions.py -v
+```
+
+This opt-in evaluation uses `GEMINI_API_KEY` and makes five API requests.
 
 ## Chat frontend (Chainlit)
 
