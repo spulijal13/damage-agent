@@ -45,17 +45,6 @@ def empty_boosts():
     return {key: 0 for key in BOOST_KEYS}
 
 
-def champions_points_to_evs(points):
-    try:
-        points = int(points)
-    except (TypeError, ValueError):
-        return 0
-    if points <= 0:
-        return 0
-    points = min(points, CHAMPIONS_MAX_POINTS_PER_STAT)
-    return points * 8 - 4
-
-
 def _int_map(source, keys, default=0):
     values = {key: default for key in keys}
     if not isinstance(source, dict):

@@ -8,7 +8,6 @@ from damage_agent.agent import apply_common_corrections, build_system_prompt
 from damage_agent.pokemon_catalog import POKEDEX_PATH, pokemon_names, pokemon_names_json
 from damage_agent.battle_builder import (
     build_battle,
-    champions_points_to_evs,
     ensure_default_doubles,
     format_battle_summary,
 )
@@ -184,11 +183,6 @@ class DamageTests(unittest.TestCase):
         self.assertEqual(result["mode"], "clarify")
 
     def test_champions_spread_is_passed_directly(self):
-        self.assertEqual(champions_points_to_evs(0), 0)
-        self.assertEqual(champions_points_to_evs(1), 4)
-        self.assertEqual(champions_points_to_evs(14), 108)
-        self.assertEqual(champions_points_to_evs(17), 132)
-        self.assertEqual(champions_points_to_evs(32), 252)
         battle = build_battle({
             "attacker": {"name": "Sneasler", "spread": {"atk": 32}},
             "defender": {"name": "Primarina", "spread": {"hp": 32, "spd": 14}},
@@ -198,6 +192,18 @@ class DamageTests(unittest.TestCase):
         self.assertEqual(battle["defender"]["evs"]["hp"], 32)
         self.assertEqual(battle["defender"]["evs"]["spd"], 14)
         self.assertEqual(battle["defender"]["evs"]["def"], 0)
+
+    def test_champions_points_are_not_converted_before_calculation(self):
+        battle = build_battle({
+            "attacker": {"name": "Garchomp-Mega-Z"},
+            "defender": {"name": "Salamence-Mega", "spread": {"hp": 2}},
+            "move": "Power Gem",
+        })
+        self.assertEqual(battle["attacker"]["evs"]["spa"], 32)
+        self.assertEqual(battle["defender"]["evs"]["hp"], 2)
+        result = run_showdown_calc(battle)
+        self.assertEqual(result["defender_hp"], 172)
+        self.assertEqual(result["range"], [106, 126])
 
     def test_evs_wording_still_means_champions_points(self):
         battle = build_battle({

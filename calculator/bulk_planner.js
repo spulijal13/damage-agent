@@ -98,9 +98,7 @@ function optimize(input, prepareBattle) {
       const result=calculate(gen,battle.attacker,defender,battle.move,battle.field);
       // Smogon's KO text includes residual/recovery mechanics that this planner
       // excludes. Use our propagated probabilities for the KO wording instead.
-      report.damage_description=result.fullDesc('%',false).split(' -- ')[0]
-        .replace(/\b(\d+)([+-]?) (HP|Atk|Def|SpA|SpD|Spe)\b/g,
-          (_,value,nature,stat)=>`${Number(value) ? (Number(value)+4)/8 : 0}${nature} ${stat}`);
+      report.damage_description=result.fullDesc('%',false).split(' -- ')[0];
     });
   }
   return {minimum,full_budget:full,reference,fallback,individual,cells};
