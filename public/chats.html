@@ -4,12 +4,12 @@
 <body>
 <aside id="sidebar">
   <div class="library-heading"><h2>Chat library</h2><button id="new-chat" type="button">＋ New chat</button></div>
-  <p class="muted">Shared workspace · Saved automatically</p>
+  <p class="muted">Shared workspace</p>
   <label class="sr-only" for="search">Search chats</label><input id="search" type="search" placeholder="Search chats…">
   <nav id="chat-list" aria-label="Saved chats"></nav>
 </aside>
 <main>
-  <header><button id="toggle-chats" type="button" aria-controls="sidebar" aria-expanded="false">☰ Chats</button><div class="chat-heading"><span class="eyebrow">BATTLE WORKSPACE / 02</span><h1><span id="chat-title">New chat</span><span class="dot">.</span></h1></div></header>
+  <header><button id="toggle-chats" type="button" aria-controls="sidebar" aria-expanded="false">☰ Chats</button><div class="chat-heading"><span class="eyebrow">BATTLE WORKSPACE</span><h1><span id="chat-title">New chat</span><span class="dot">.</span></h1></div></header>
   <div id="notice" role="status"></div>
   <section id="messages" aria-label="Conversation" tabindex="0"></section>
   <details class="prompt-examples"><summary>Example prompts</summary>
@@ -19,9 +19,9 @@
 <button type="button" data-prompt="Now aim for at least 95% survival after two uses.">Change the survival target</button>
 </details>
 <form id="composer">
-<button id="add-pokemon" type="button" aria-label="Add saved Pokémon" title="Add saved Pokémon">＋</button>
+<button id="add-pokemon" type="button" aria-label="Add saved Pokémon" title="Add saved Pokémon"><img src="/public/pokeball.png" alt=""></button>
 <div class="composer-input"><label class="sr-only" for="question">Message</label><div id="question" contenteditable="true" role="textbox" aria-label="Message" aria-multiline="true" data-placeholder="Ask about a battle, or add Pokémon with ＋…"></div></div>
-<button id="send" type="submit">Send ↑</button><p class="muted">Champions points · Follow-ups remember this chat’s battle · Shift + Enter for a new line</p></form>
+<button id="send" type="submit">Send ↑</button><p class="muted">Shift + Enter for a new line</p></form>
 <dialog id="saved-team-picker"><h2>Add a Pokémon</h2>
 <p class="muted">Choose a saved build to use in your question.</p>
 <label for="saved-member">Team Pokémon</label><select id="saved-member"></select>

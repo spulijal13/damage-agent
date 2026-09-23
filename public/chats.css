@@ -55,11 +55,12 @@ h1 { display: flex; font-size: 22px; font-weight: 600; letter-spacing: -.6px; ma
 .show-answer { margin-top: 12px; padding: 6px 10px; color: var(--muted); background: transparent; }
 #composer { padding: 16px 28px 12px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: end; gap: 10px; border-top: 1px solid #2b3038; }
 .composer-input textarea { width: 100%; }
-#question { min-height: 70px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 12px; background: #101318; border: 1px solid #414a55; border-radius: 10px; font: inherit; }
+#question { min-height: 40px; max-height: 200px; overflow-y: auto; white-space: pre-wrap; overflow-wrap: anywhere; padding: 8px 12px; background: #101318; border: 1px solid #414a55; border-radius: 8px; font: inherit; line-height: 22px; }
 #question:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
 #question:empty::before { content: attr(data-placeholder); color: #9299a3; pointer-events: none; }
 #question .pokemon-chip { vertical-align: middle; margin: 2px; padding: 3px 8px; }
-#add-pokemon { width: 42px; height: 44px; padding: 0; font-size: 26px; }
+#add-pokemon { width: 40px; height: 40px; padding: 0; display: grid; place-items: center; background: transparent; border-radius: 8px; }
+#add-pokemon img { width: 32px; height: 32px; object-fit: contain; image-rendering: pixelated; }
 .pokemon-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px; }
 .pokemon-chips[hidden] { display: none; }
 #pokemon-chips { grid-column: 1 / -1; margin-bottom: 0; }
@@ -67,7 +68,7 @@ h1 { display: flex; font-size: 22px; font-weight: 600; letter-spacing: -.6px; ma
 .pokemon-chip button { padding: 0 3px; border: 0; background: transparent; color: #ccd4dd; font-size: 20px; line-height: 1; }
 textarea { resize: vertical; min-height: 70px; max-height: 200px; }
 #send, #new-chat, #rename-form button[type="submit"] { background: var(--accent); border-color: var(--accent); color: #321719; font-weight: 650; }
-#send { padding: 12px 17px; }
+#send { height: 40px; padding: 0 17px; }
 #composer p { grid-column: 1 / -1; margin: 0; }
 dialog { width: min(450px, calc(100% - 32px)); background: #171b20; color: inherit; border: 1px solid #414a55; border-radius: 16px; padding: 28px; }
 dialog::backdrop { background: #000b; backdrop-filter: blur(4px); }
