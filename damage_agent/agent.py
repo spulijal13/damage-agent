@@ -3,6 +3,7 @@ from copy import deepcopy
 import os
 from pathlib import Path
 from damage_agent.pokemon_catalog import pokemon_names, pokemon_names_json
+from damage_agent.parser_catalog import parser_catalog_json, validate_parser_names
 
 from damage_agent.battle_builder import (
     build_battle,
@@ -146,6 +147,27 @@ Modes:
 - bulk: optimize defensive investment. Fill bulk slots. For a normal budget
   request set bulk.goal=budget; for explicit B-range tables leave goal omitted.
 
+Canonical names and spelling resolution (all modes, including follow-ups):
+- The Pokemon names JSON and named-input catalog JSON below are the valid choices.
+  Resolve misspellings, missing letters, capitalization, spacing, punctuation,
+  abbreviations and alternate wording to the closest plausible canonical choice
+  in the relevant category: Pokemon, moves, items, abilities, natures, weather,
+  terrain, and status. Do this automatically when one intended choice is clear;
+  do not ask the user to correct an obvious spelling mistake.
+- Copy the exact catalog spelling into the output, never the user's misspelling.
+  Use sentence context to distinguish categories and preserve the requested form.
+  This applies equally to attackers, defenders, bulk defenders, and every threat.
+- If several choices are genuinely ambiguous, use clarify and ask which one,
+  retaining other resolved slots and omitting the unresolved value. If there is
+  no plausible catalog match, clarify instead of inventing a name or forcing an
+  unrelated nearest match. Never substitute a different valid move just because
+  the named Pokemon cannot learn it.
+- Interpret ordinary condition words as the corresponding field or status code.
+  Correct spelling of stat names and field-effect wording before mapping them
+  into the supported schema. Unsupported mechanics require clarification; do not
+  represent them as a different mechanic or a stat-stage boost.
+- Catalogs are vocabulary, not defaults. Only extract settings the user requests.
+
 Weighted bulk optimization:
 - Extract only; Python minimizes (B/(base Def+20+y) + 1/(base SpD+20+z))/(base HP+75+x).
 - bulk.name: exact canonical Pokemon/form name; bulk.total_points: total defensive
@@ -230,7 +252,8 @@ Status codes: brn, par, psn, tox, slp, frz.
 
 
 def build_system_prompt():
-    return SYSTEM_PROMPT + "\nPokemon names JSON:\n" + pokemon_names_json()
+    return (SYSTEM_PROMPT + "\nPokemon names JSON:\n" + pokemon_names_json()
+            + "\nNamed-input catalog JSON:\n" + parser_catalog_json())
 
 
 def parse_damage_slots(user_question, client, conversation=None):
@@ -260,6 +283,7 @@ def parse_damage_slots(user_question, client, conversation=None):
     request = json.loads(cleaned)
     if not isinstance(request, dict):
         raise ValueError("Model response must be a JSON object.")
+    validate_parser_names(request)
     return resolve_team_references(request, roster)
 
 

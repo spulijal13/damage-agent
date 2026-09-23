@@ -35,6 +35,18 @@ The catalog is cached per process: update the Pokédex and restart the CLI to re
 it. Only names are sent to Gemini, not the full stats/abilities dataset; this adds
 prompt tokens to each request. No separate generated data file needs maintaining.
 
+Moves, items, abilities, and natures follow the same catalog-based spelling
+resolution approach. `calculator/parser_catalog.js` derives their canonical names
+from the installed Champions and generation-9 calculator datasets;
+`damage_agent/parser_catalog.py` caches those names per process and includes the
+supported weather, terrain, and status values. Gemini receives these choices on
+both CLI questions and chat follow-ups and is instructed to automatically resolve
+clear misspellings to the closest plausible canonical name. Genuinely ambiguous
+or unrecognized inputs require clarification. Python validates the returned names
+before calculation; there are no hardcoded typo aliases or local fuzzy matching.
+Restart the process after updating calculator data. The additional vocabulary
+increases prompt size; spelling resolution still depends on model interpretation.
+
 The battle builder defaults to the Smogon Pokémon Champions ruleset, level 50, 31 IVs, and a Serious (neutral)
 nature for both Pokémon, always displayed in the battle summary. The attacker defaults
 to 32 Champions points in Attack for physical moves or Special Attack for special
